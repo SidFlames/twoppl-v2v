@@ -252,61 +252,58 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE5E5EA), // Remove white flash on screen load
+      backgroundColor: Colors.white,
       bottomNavigationBar: const SharedBottomNav(currentTab: BottomNavTab.journey),
       body: Stack(
         children: [
-          // Background Map with soft grey loading placeholder
+          // Background Map
           Positioned.fill(
-            child: Container(
-              color: const Color(0xFFE5E5EA), // Soft iOS-style map placeholder
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _originLatLng,
-                  initialZoom: 13.0,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _originLatLng,
+                initialZoom: 13.0,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.safesphere.lumora',
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.safesphere.lumora',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: _originLatLng,
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Color(0xFF003D9B),
-                          size: 35,
-                        ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _originLatLng,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Color(0xFF003D9B),
+                        size: 35,
                       ),
-                      Marker(
-                        point: _destinationLatLng,
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.flag,
-                          color: Color(0xFFBA1A1A),
-                          size: 35,
-                        ),
+                    ),
+                    Marker(
+                      point: _destinationLatLng,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.flag,
+                        color: Color(0xFFBA1A1A),
+                        size: 35,
+                      ),
+                    ),
+                  ],
+                ),
+                if (_routeGeometry != null)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: _routeGeometry!,
+                        color: const Color(0xFF003D9B),
+                        strokeWidth: 5,
                       ),
                     ],
                   ),
-                  if (_routeGeometry != null)
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: _routeGeometry!,
-                          color: const Color(0xFF003D9B),
-                          strokeWidth: 5,
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
 

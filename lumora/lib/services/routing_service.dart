@@ -102,7 +102,7 @@ class RoutingService {
           'limit': 1,
         },
         options: Options(
-          headers: {'User-Agent': 'SafeSphere/1.0 (lumora; contact@safesphere.app)'},
+          headers: {'User-Agent': 'Lumora/1.0 (lumora; contact@lumora.app)'},
           receiveTimeout: const Duration(seconds: 8),
         ),
       );
@@ -135,7 +135,7 @@ class RoutingService {
           'addressdetails': 1,
         },
         options: Options(
-          headers: {'User-Agent': 'SafeSphere/1.0 (lumora; contact@safesphere.app)'},
+          headers: {'User-Agent': 'Lumora/1.0 (lumora; contact@lumora.app)'},
           receiveTimeout: const Duration(seconds: 5),
         ),
       );
@@ -169,7 +169,7 @@ class RoutingService {
           'format': 'json',
         },
         options: Options(
-          headers: {'User-Agent': 'SafeSphere/1.0 (lumora; contact@safesphere.app)'},
+          headers: {'User-Agent': 'Lumora/1.0 (lumora; contact@lumora.app)'},
           receiveTimeout: const Duration(seconds: 8),
         ),
       );

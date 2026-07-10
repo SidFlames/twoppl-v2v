@@ -16,11 +16,11 @@ void main() async {
   );
   // Initialize background voice service (does not start it — just registers)
   await VoiceBackgroundService.initializeService();
-  runApp(const SafeSphereApp());
+  runApp(const LumoraApp());
 }
 
-class SafeSphereApp extends StatelessWidget {
-  const SafeSphereApp({super.key});
+class LumoraApp extends StatelessWidget {
+  const LumoraApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class SafeSphereApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SafeSphere',
+      title: 'Lumora',
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -268,7 +268,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             const Padding(
               padding: EdgeInsets.only(top: 24, bottom: 8),
               child: Text(
-                'SafeSphere',
+                'Lumora',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1359,7 +1359,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Login to continue to SafeSphere',
+                          'Login to continue to Lumora',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 14, color: Color(0xFF595F66)),
                         ),

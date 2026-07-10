@@ -164,7 +164,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             Icon(Icons.menu, color: _primary),
             SizedBox(width: 12),
             Text(
-              'SafeSphere',
+              'Lumora',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
