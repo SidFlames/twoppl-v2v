@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../widgets/shared_bottom_nav.dart';
 import 'journey_tracking_screen.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class LocationEntryScreen extends StatefulWidget {
   const LocationEntryScreen({super.key});
@@ -560,98 +562,58 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
 class _MapBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _MapPainter(),
-      size: Size.infinite,
-    );
-  }
-}
-
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = const Color(0xFFF0F4F8); // Lighter background
-    canvas.drawRect(Offset.zero & size, bg);
-
-    final streetPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round;
-
-    final minorPaint = Paint()
-      ..color = const Color(0xFFE2E8F0)
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round;
-
-    for (int i = 1; i <= 10; i++) {
-      final y = size.height * i / 11;
-      final paint = i % 3 == 0 ? streetPaint : minorPaint;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    for (int i = 1; i <= 8; i++) {
-      final x = size.width * i / 9;
-      final paint = i % 2 == 0 ? streetPaint : minorPaint;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    
-    // Add destination marker path visualization (simplified)
-    final routePaint = Paint()
-      ..color = const Color(0xFF003D9B)
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-      
-    final path = Path()
-      ..moveTo(size.width * 0.35, size.height * 0.25)
-      ..lineTo(size.width * 0.5, size.height * 0.3)
-      ..lineTo(size.width * 0.6, size.height * 0.35);
-      
-    canvas.drawPath(path, routePaint);
-    
-    // Draw markers
-    canvas.drawCircle(Offset(size.width * 0.35, size.height * 0.25), 8, Paint()..color = const Color(0xFF003D9B));
-    canvas.drawCircle(Offset(size.width * 0.35, size.height * 0.25), 4, Paint()..color = Colors.white);
-    
-    // Custom pin for destination
-    final pinPaint = Paint()..color = const Color(0xFFBA1A1A);
-    final pathDest = Path()
-      ..moveTo(size.width * 0.6, size.height * 0.35)
-      ..lineTo(size.width * 0.6 - 6, size.height * 0.35 - 12)
-      ..arcToPoint(Offset(size.width * 0.6 + 6, size.height * 0.35 - 12), radius: const Radius.circular(6))
-      ..close();
-    canvas.drawPath(pathDest, pinPaint);
-    canvas.drawCircle(Offset(size.width * 0.6, size.height * 0.35 - 12), 3, Paint()..color = Colors.white);
-    
-    // Map text (Noida Sector 62)
-    final textPainter = TextPainter(
-      text: const TextSpan(
-        text: 'NOIDA SECTOR 62',
-        style: TextStyle(color: Color(0xFF003D9B), fontSize: 10, fontWeight: FontWeight.bold),
+    return FlutterMap(
+      options: const MapOptions(
+        initialCenter: LatLng(28.6139, 77.2090), // Connaught Place, New Delhi
+        initialZoom: 13.0,
       ),
-      textDirection: TextDirection.ltr,
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.safesphere.lumora',
+        ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: const LatLng(28.6139, 77.2090),
+              width: 40,
+              height: 40,
+              child: const Icon(
+                Icons.location_on,
+                color: Color(0xFF003D9B),
+                size: 35,
+              ),
+            ),
+            Marker(
+              point: const LatLng(28.6273, 77.3725), // Noida Sec 62
+              width: 40,
+              height: 40,
+              child: const Icon(
+                Icons.flag,
+                color: Color(0xFFBA1A1A),
+                size: 35,
+              ),
+            ),
+          ],
+        ),
+        PolylineLayer(
+          polylines: [
+            Polyline(
+              points: const [
+                LatLng(28.6139, 77.2090),
+                LatLng(28.6200, 77.3000),
+                LatLng(28.6273, 77.3725),
+              ],
+              color: const Color(0xFF003D9B),
+              strokeWidth: 4,
+            ),
+          ],
+        ),
+      ],
     );
-    textPainter.layout();
-    
-    // Draw text background
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(size.width * 0.6 + textPainter.width/2 + 10, size.height * 0.35 - 15),
-          width: textPainter.width + 16,
-          height: textPainter.height + 8
-        ), 
-        const Radius.circular(4)
-      ), 
-      Paint()..color = Colors.white
-    );
-    
-    textPainter.paint(canvas, Offset(size.width * 0.6 + 18, size.height * 0.35 - 20));
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
 
 class _DashedLinePainter extends CustomPainter {
   @override
