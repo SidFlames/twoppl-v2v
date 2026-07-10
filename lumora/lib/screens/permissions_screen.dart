@@ -30,7 +30,15 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   bool _isGranted = false;
 
   void _handleGrantAll() {
-    if (_isRequesting || _isGranted) return;
+    if (_isGranted) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const EmergencyContactsScreen(),
+        ),
+      );
+      return;
+    }
+    if (_isRequesting) return;
 
     setState(() {
       _isRequesting = true;
@@ -51,16 +59,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         _storage = true;
         _backgroundLocation = true;
         _batteryOptimization = true;
-      });
-
-      // Navigate to EmergencyContactsScreen after 2 seconds
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        if (!mounted) return;
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => const EmergencyContactsScreen(),
-          ),
-        );
       });
     });
   }
@@ -296,7 +294,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 children: [
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isGranted ? _tertiaryContainer : _primary,
+                      backgroundColor: _primary,
                       foregroundColor: Colors.white,
                       elevation: 4,
                       shadowColor: _primary.withValues(alpha: 0.2),
@@ -316,7 +314,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                             ),
                           )
                         : Text(
-                            _isGranted ? 'Permissions Granted' : 'Continue',
+                            _isGranted ? 'Next' : 'Continue',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
