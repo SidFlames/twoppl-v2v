@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'guardian_mode_dashboard_screen.dart';
 import '../widgets/shared_bottom_nav.dart';
 
@@ -24,6 +26,32 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   static const _errorContainer = Color(0xFF8C0005);
 
   bool _isGuardianModeActive = false;
+  StreamSubscription<DocumentSnapshot>? _userSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _userSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .listen((snapshot) {
+        if (snapshot.exists && mounted) {
+          setState(() {
+            _isGuardianModeActive = snapshot.data()?['guardianMode'] ?? false;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _userSubscription?.cancel();
+    super.dispose();
+  }
 
   Future<void> _openGuardianMode() async {
     final result = await Navigator.of(context).push<bool>(
@@ -32,13 +60,14 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       ),
     );
     if (!mounted) return;
-    // Debug: print what was returned
-    debugPrint('Returned from Guardian Mode: $result, current state: $_isGuardianModeActive');
     if (result != null) {
-      setState(() {
-        _isGuardianModeActive = result;
-      });
-      debugPrint('Updated state to: $_isGuardianModeActive');
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'guardianMode': result});
+      }
     }
   }
 
