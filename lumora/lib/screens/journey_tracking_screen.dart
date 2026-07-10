@@ -37,7 +37,7 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
 
   // ── animation ─────────────────────────────────────────────────────────────
   late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnim;
+
 
   // ── state ─────────────────────────────────────────────────────────────────
   String _statusMessage = ''; // '' = idle, 'safe' = confirmed, 'sos' = active
@@ -70,10 +70,6 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
-
-    _pulseAnim = Tween<double>(begin: 0.92, end: 1.08).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
 
     // Tick live values every 3s to give a "live" feel and write to Firestore
     _liveTimer = Timer.periodic(const Duration(seconds: 3), (_) async {

@@ -20,15 +20,11 @@ class _EmergencyActiveScreenState extends State<EmergencyActiveScreen>
   static const _primaryContainer = Color(0xFF0052CC);
   static const _secondary = Color(0xFF595F66);
   static const _onSurface = Color(0xFF1B1B1D);
-  static const _onSurfaceVariant = Color(0xFF434654);
   static const _surface = Color(0xFFFCF8FB);
   static const _surfaceContainerLow = Color(0xFFF6F3F5);
-  static const _surfaceContainerLowest = Color(0xFFFFFFFF);
   static const _outlineVariant = Color(0xFFC3C6D6);
   static const _error = Color(0xFFBA1A1A);
-  static const _errorContainer = Color(0xFFFFDAD6);
   static const _tertiary = Color(0xFF8C0005);
-  static const _tertiaryContainer = Color(0xFFB90009);
 
   // ── Animation controllers ──────────────────────────────────────────────
   late final AnimationController _sosPulseController;
@@ -39,8 +35,8 @@ class _EmergencyActiveScreenState extends State<EmergencyActiveScreen>
   Timer? _timer;
   int _audioSeconds = 0;
   int _videoSeconds = 0;
-  int _contactsNotified = 3; // from the design: "Sharing with 3 contacts"
-  int _alertsSent = 3;
+  final int _contactsNotified = 3; // from the design: "Sharing with 3 contacts"
+  final int _alertsSent = 3;
 
   @override
   void initState() {

@@ -23,7 +23,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   static const _onSurface = Color(0xFF1B1B1D);
   static const _outlineVariant = Color(0xFFC3C6D6);
   static const _surface = Color(0xFFFCF8FB);
-  static const _surfaceContainerHigh = Color(0xFFEAE7EA);
   static const _surfaceContainerHighest = Color(0xFFE4E2E4);
   static const _successContainer = Color(0xFF1A7A3C);
   static const _errorContainer = Color(0xFF8C0005);

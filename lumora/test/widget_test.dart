@@ -9,7 +9,7 @@ import 'package:lumora/main.dart';
 void main() {
   testWidgets('SafeSphere app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const SafeSphereApp());
+    await tester.pumpWidget(const LumoraApp());
 
     // Verify that the onboarding screen loads with the expected title.
     expect(find.text('Smart Protection\nWhen You Need It Most'), findsWidgets);

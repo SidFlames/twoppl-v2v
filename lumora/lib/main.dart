@@ -919,256 +919,6 @@ class _ShaderPainter extends CustomPainter {
   bool shouldRepaint(covariant _ShaderPainter oldDelegate) => oldDelegate.time != time;
 }
 
-class _HeroPanel extends StatelessWidget {
-  const _HeroPanel({
-    this.compact = false,
-    this.color = const Color(0xFF0C56D0),
-  });
-
-  final bool compact;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(compact ? 0 : 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.1),
-            ),
-            child: Icon(Icons.shield_rounded, size: 38, color: color),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Smart Protection\nWhen You Need It Most',
-            style: TextStyle(
-              fontSize: 36,
-              height: 1.05,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-              color: Color(0xFF1B1B1D),
-            ),
-          ),
-          const SizedBox(height: 14),
-          const SizedBox(
-            width: 360,
-            child: Text(
-              'AI-powered voice recognition, real-time alerts, and smart emergency support in one calm, secure space.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.5,
-                color: Color(0xFF595F66),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 420),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.76),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: const Color(0xFFC3C6D6)),
-              boxShadow: const [
-                BoxShadow(color: Color(0x11000000), blurRadius: 28, offset: Offset(0, 12)),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Protected connection',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Your account, location, and emergency access stay encrypted and ready.',
-                  style: TextStyle(fontSize: 14, height: 1.45, color: Color(0xFF595F66)),
-                ),
-                const SizedBox(height: 18),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    height: 180,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          color.withValues(alpha: 0.18),
-                          const Color(0xFFF0EDEF),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          right: -28,
-                          top: -28,
-                          child: _GlowCircle(color: color.withValues(alpha: 0.18), size: 120),
-                        ),
-                        Positioned(
-                          left: -18,
-                          bottom: -22,
-                          child: _GlowCircle(color: const Color(0xFF8C0005).withValues(alpha: 0.12), size: 140),
-                        ),
-                        const Center(child: _RadarPulse()),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OnboardingCard extends StatelessWidget {
-  const _OnboardingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(maxWidth: 440),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFC3C6D6)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x14000000), blurRadius: 30, offset: Offset(0, 14)),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _StatusBarMock(),
-          const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 0),
-            child: Text(
-              'Smart Protection\nWhen You Need It Most',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 24,
-                height: 1.1,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.6,
-                color: Color(0xFF1B1B1D),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 0),
-            child: Text(
-              'AI-powered voice recognition, real-time alerts and smart emergency support.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF595F66)),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            height: 240,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF6F3F5),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFC3C6D6)),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: _FloatingBadge(
-                    icon: Icons.shield_rounded,
-                    label: 'Safe',
-                    color: scheme.primary,
-                  ),
-                ),
-                Positioned(
-                  bottom: 20,
-                  left: 16,
-                  child: _FloatingBadge(
-                    icon: Icons.location_on_rounded,
-                    label: 'Live',
-                    color: scheme.tertiary,
-                  ),
-                ),
-                const Center(child: _IllustrationFigure()),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _IndicatorDot(active: false),
-              _IndicatorDot(active: true),
-              _IndicatorDot(active: false),
-            ],
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: scheme.primary,
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(56),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const LoginScreen(),
-                ),
-              );
-            },
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Next', style: TextStyle(fontWeight: FontWeight.w700)),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_rounded, size: 18),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const LoginScreen(),
-                ),
-              );
-            },
-            style: TextButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              foregroundColor: const Color(0xFF595F66),
-            ),
-            child: const Text('Skip', style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -1203,6 +953,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     final fullPhone = '+91$phone';
+    // Capture context before async gap
+    final ctx = context;
     try {
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: fullPhone,
@@ -1244,8 +996,8 @@ class _LoginScreenState extends State<LoginScreen> {
         codeAutoRetrievalTimeout: (String verificationId) {},
       );
     } catch (e) {
-      setState(() => _isLoading = false);
-      _bypassOtpFlow(context, fullPhone);
+      if (!ctx.mounted) return;
+      _bypassOtpFlow(ctx, fullPhone);
     }
   }
 
@@ -1524,15 +1276,7 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  void _clearLastDigit() {
-    for (var index = _controllers.length - 1; index >= 0; index--) {
-      if (_controllers[index].text.isNotEmpty) {
-        _controllers[index].clear();
-        _focusNodes[index].requestFocus();
-        break;
-      }
-    }
-  }
+
 
   bool _isVerifying = false;
 
@@ -1771,189 +1515,6 @@ class _PhoneFieldState extends State<_PhoneField> {
   }
 }
 
-class _FloatingBadge extends StatelessWidget {
-  const _FloatingBadge({required this.icon, required this.label, required this.color});
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFC3C6D6)),
-        boxShadow: const [BoxShadow(color: Color(0x10000000), blurRadius: 14, offset: Offset(0, 8))],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
-        ],
-      ),
-    );
-  }
-}
-
-class _IndicatorDot extends StatelessWidget {
-  const _IndicatorDot({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.symmetric(horizontal: 3),
-      width: active ? 24 : 6,
-      height: 6,
-      decoration: BoxDecoration(
-        color: active ? const Color(0xFF0C56D0) : const Color(0xFFDEE3EB),
-        borderRadius: BorderRadius.circular(3),
-      ),
-    );
-  }
-}
-
-class _RadarPulse extends StatelessWidget {
-  const _RadarPulse();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 86,
-      height: 86,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0C56D0).withValues(alpha: 0.1),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0C56D0).withValues(alpha: 0.22),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.verified_user_rounded, color: Color(0xFF0C56D0)),
-        ),
-      ),
-    );
-  }
-}
-
-class _IllustrationFigure extends StatelessWidget {
-  const _IllustrationFigure();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 150,
-          height: 150,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF0C56D0).withValues(alpha: 0.08),
-          ),
-        ),
-        Container(
-          width: 104,
-          height: 160,
-          decoration: BoxDecoration(
-            color: const Color(0xFFDEE3EB),
-            borderRadius: BorderRadius.circular(52),
-          ),
-        ),
-        Positioned(
-          top: 22,
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFF6D7C6),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 62,
-          child: Container(
-            width: 68,
-            height: 82,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0C56D0),
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 22,
-          left: 36,
-          child: Container(width: 18, height: 72, decoration: const BoxDecoration(color: Color(0xFF1B1B1D), borderRadius: BorderRadius.vertical(top: Radius.circular(9)))),
-        ),
-        Positioned(
-          bottom: 22,
-          right: 36,
-          child: Container(width: 18, height: 72, decoration: const BoxDecoration(color: Color(0xFF1B1B1D), borderRadius: BorderRadius.vertical(top: Radius.circular(9)))),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlowCircle extends StatelessWidget {
-  const _GlowCircle({required this.color, required this.size});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-        boxShadow: [BoxShadow(color: color, blurRadius: 28, spreadRadius: 10)],
-      ),
-    );
-  }
-}
-
-class _StatusBarMock extends StatelessWidget {
-  const _StatusBarMock();
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.6,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          Text('9:41', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-          Row(
-            children: [
-              Icon(Icons.signal_cellular_4_bar, size: 16),
-              SizedBox(width: 6),
-              Icon(Icons.wifi, size: 16),
-              SizedBox(width: 6),
-              Icon(Icons.battery_full, size: 16),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _BackgroundOrbs extends StatelessWidget {
   const _BackgroundOrbs();
 
@@ -2004,4 +1565,25 @@ class _DotGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+
+class _GlowCircle extends StatelessWidget {
+  const _GlowCircle({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [BoxShadow(color: color, blurRadius: 28, spreadRadius: 10)],
+      ),
+    );
+  }
 }

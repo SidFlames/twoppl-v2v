@@ -360,7 +360,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: _outlineVariant.withOpacity(0.5),
+                          color: _outlineVariant.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -698,7 +698,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? _primary.withOpacity(0.05) : Colors.white,
+          color: isSelected ? _primary.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? _primary : _outlineVariant,
