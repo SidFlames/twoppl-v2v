@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
 class GuardianModeDashboardScreen extends StatefulWidget {
-  const GuardianModeDashboardScreen({super.key});
+  const GuardianModeDashboardScreen({super.key, this.initialActive = true});
+  final bool initialActive;
 
   @override
   State<GuardianModeDashboardScreen> createState() => _GuardianModeDashboardScreenState();
 }
 
 class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _primary = Color(0xFF003D9B);
   static const _primaryContainer = Color(0xFFDAE2FF);
   static const _secondary = Color(0xFF595F66);
@@ -31,10 +32,16 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
   @override
   void initState() {
     super.initState();
+    _isGuardianModeActive = widget.initialActive;
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
-    )..repeat();
+    );
+    
+    if (_isGuardianModeActive) {
+      _pulseController.repeat();
+    }
 
     _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeOut),
@@ -50,8 +57,7 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
       curve: Curves.easeInOut,
     );
 
-    // Start with active state
-    _toggleController.value = 1.0;
+    _toggleController.value = _isGuardianModeActive ? 1.0 : 0.0;
   }
 
   @override
@@ -72,11 +78,18 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
         _pulseController.stop();
       }
     });
+    // Debug: print state change
+    debugPrint('Guardian Mode toggled to: $_isGuardianModeActive');
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.of(context).pop(_isGuardianModeActive);
+      },
+      child: Scaffold(
       backgroundColor: _surface,
       appBar: AppBar(
         backgroundColor: _surface,
@@ -84,7 +97,7 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: _primary),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(_isGuardianModeActive),
         ),
         title: const Text(
           'Guardian Mode',
@@ -103,15 +116,18 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
           ),
         ],
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+        body: SafeArea(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {}, // Consume taps to prevent propagation
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     // Status Section
                     const SizedBox(height: 16),
                     Center(
@@ -191,6 +207,7 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                       animation: _toggleAnimation,
                       builder: (context, child) {
                         return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: _toggleGuardianMode,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
@@ -315,26 +332,27 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                         // Protection Score
                         Expanded(
                           child: Container(
-                            height: 160,
+                            height: 170,
                             decoration: BoxDecoration(
                               color: _surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: _outlineVariant.withValues(alpha: 0.5)),
                             ),
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 SizedBox(
-                                  width: 80,
-                                  height: 80,
+                                  width: 64,
+                                  height: 64,
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
                                       SizedBox.expand(
                                         child: CircularProgressIndicator(
                                           value: 1.0,
-                                          strokeWidth: 8,
+                                          strokeWidth: 7,
                                           backgroundColor: _outlineVariant.withValues(alpha: 0.2),
                                           valueColor: const AlwaysStoppedAnimation<Color>(_primary),
                                         ),
@@ -342,7 +360,7 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                                       const Text(
                                         '100%',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 15,
                                           fontWeight: FontWeight.w700,
                                           color: _primary,
                                         ),
@@ -350,11 +368,11 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 10),
                                 const Text(
                                   'Protection Score',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     color: _secondary,
                                   ),
@@ -363,43 +381,37 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         // Health Checklist
                         Expanded(
                           child: Container(
-                            height: 160,
+                            height: 170,
                             decoration: BoxDecoration(
                               color: _surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: _outlineVariant.withValues(alpha: 0.5)),
                             ),
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Text(
                                   'Guardian Health',
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: _onSurface,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                Expanded(
-                                  child: ListView(
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    children: const [
-                                      _ChecklistItem(title: 'Voice Ready'),
-                                      SizedBox(height: 6),
-                                      _ChecklistItem(title: 'GPS Ready'),
-                                      SizedBox(height: 6),
-                                      _ChecklistItem(title: 'Contacts Ready'),
-                                      SizedBox(height: 6),
-                                      _ChecklistItem(title: 'Permissions Ready'),
-                                    ],
-                                  ),
-                                ),
+                                const SizedBox(height: 8),
+                                const _ChecklistItem(title: 'Voice Ready'),
+                                const SizedBox(height: 4),
+                                const _ChecklistItem(title: 'GPS Ready'),
+                                const SizedBox(height: 4),
+                                const _ChecklistItem(title: 'Contacts Ready'),
+                                const SizedBox(height: 4),
+                                const _ChecklistItem(title: 'Permissions Ready'),
                               ],
                             ),
                           ),
@@ -466,11 +478,14 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                                       style: TextStyle(color: _outlineVariant, fontSize: 10),
                                     ),
                                     const SizedBox(width: 6),
-                                    const Text(
-                                      'Configured & Ready',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: _secondary,
+                                    Flexible(
+                                      child: Text(
+                                        'Configured & Ready',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: _secondary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -756,9 +771,12 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
             ),
           ],
         ),
-      ),
-    );
+      ),     // GestureDetector
+        ),     // SafeArea (body:)
+      ),     // Scaffold (child: of PopScope)
+    );       // PopScope
   }
+
 
   Widget _buildAvatar({required int index, required Color color}) {
     return Container(
@@ -838,14 +856,17 @@ class _ChecklistItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.check_circle, color: Color(0xFF003D9B), size: 18),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 13,
-            color: Color(0xFF434654),
-            fontWeight: FontWeight.w500,
+        const Icon(Icons.check_circle, color: Color(0xFF003D9B), size: 14),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFF434654),
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
