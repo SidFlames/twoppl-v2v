@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../screens/active_emergency_screen.dart';
 
 class SosController {
   // ── Singleton setup ───────────────────────────────────────────────────────
@@ -38,29 +39,9 @@ class SosController {
   }
 
   void _triggerSos(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 8),
-            Text('SOS Triggered', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Text(
-          '🚨 EMERGENCY SOS ACTIVATED!\n\nYour trusted guardians have been notified of your location and environment audio feed.',
-          style: TextStyle(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel SOS', style: TextStyle(color: Colors.grey)),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const ActiveEmergencyScreen(),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'guardian_mode_dashboard_screen.dart';
+import 'active_emergency_screen.dart';
 import '../widgets/shared_bottom_nav.dart';
 import '../services/notification_service.dart';
 import 'package:uuid/uuid.dart';
@@ -129,10 +130,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
         });
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mock SOS signal emitted! Other circle devices will receive the alert.'),
-            backgroundColor: Color(0xFFBA1A1A),
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const ActiveEmergencyScreen(),
           ),
         );
       } catch (e) {
