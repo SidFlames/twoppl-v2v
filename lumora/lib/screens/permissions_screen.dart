@@ -14,7 +14,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   static const _onSurface = Color(0xFF1B1B1D);
   static const _secondary = Color(0xFF595F66);
   static const _border = Color(0xFFC3C6D6);
-  static const _tertiaryContainer = Color(0xFFB90009);
 
   // Initial states from the HTML design
   bool _location = true;
@@ -25,42 +24,25 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   bool _backgroundLocation = true;
   bool _batteryOptimization = false;
 
-  // Simulator states
-  bool _isRequesting = false;
-  bool _isGranted = false;
 
-  void _handleGrantAll() {
-    if (_isGranted) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const EmergencyContactsScreen(),
+
+  bool get _essentialGranted => _location && _microphone;
+
+  void _handleContinue() {
+    if (!_essentialGranted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enable Location and Microphone — they are essential for SafeSphere.'),
+          backgroundColor: Color(0xFFB90009),
         ),
       );
       return;
     }
-    if (_isRequesting) return;
-
-    setState(() {
-      _isRequesting = true;
-    });
-
-    // Simulate permission request logic (similar to HTML script)
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      setState(() {
-        _isRequesting = false;
-        _isGranted = true;
-
-        // Turn all toggles to true
-        _location = true;
-        _microphone = true;
-        _notifications = true;
-        _camera = true;
-        _storage = true;
-        _backgroundLocation = true;
-        _batteryOptimization = true;
-      });
-    });
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const EmergencyContactsScreen(),
+      ),
+    );
   }
 
   @override
@@ -85,27 +67,20 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         ),
         centerTitle: false,
       ),
-      body: Stack(
+      body: Column(
         children: [
-          // Main Scrollable Area
-          SafeArea(
+          // Scrollable content
+          Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 8,
-                bottom: 180, // Space for fixed bottom buttons
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Pulse Shield Header Section
                   const SizedBox(height: 16),
                   Center(
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Blur pulse effect
                         Container(
                           width: 80,
                           height: 80,
@@ -185,7 +160,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Enables real-time tracking during SOS and powers SafeRoute AI to guide you through secure zones.',
                           value: _location,
                           onChanged: (val) => setState(() => _location = val),
-                          showCheck: _isGranted,
+                          required: true,
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildPermissionTile(
@@ -195,7 +170,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Necessary for hands-free voice-activated SOS and secure voice biometric enrollment.',
                           value: _microphone,
                           onChanged: (val) => setState(() => _microphone = val),
-                          showCheck: _isGranted,
+                          required: true,
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildPermissionTile(
@@ -205,7 +180,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Immediate alerts for threat proximity and status updates from your designated guardians.',
                           value: _notifications,
                           onChanged: (val) => setState(() => _notifications = val),
-                          showCheck: _isGranted,
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildPermissionTile(
@@ -215,7 +189,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Captures critical video evidence during SOS triggers for the Evidence Vault.',
                           value: _camera,
                           onChanged: (val) => setState(() => _camera = val),
-                          showCheck: _isGranted,
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildPermissionTile(
@@ -225,7 +198,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Secures recordings and safety logs within the encrypted on-device Evidence Vault.',
                           value: _storage,
                           onChanged: (val) => setState(() => _storage = val),
-                          showCheck: _isGranted,
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildPermissionTile(
@@ -235,7 +207,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Ensures constant protection even if the app is minimized or the screen is locked.',
                           value: _backgroundLocation,
                           onChanged: (val) => setState(() => _backgroundLocation = val),
-                          showCheck: _isGranted,
                         ),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildPermissionTile(
@@ -245,16 +216,15 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                               'Prevents the operating system from suspending safety services in the background.',
                           value: _batteryOptimization,
                           onChanged: (val) => setState(() => _batteryOptimization = val),
-                          showCheck: _isGranted,
                         ),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 24),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.lock_outline_rounded, size: 16, color: _secondary),
                       SizedBox(width: 8),
                       Text(
@@ -273,15 +243,13 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             ),
           ),
 
-          // Fixed Bottom Actions
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
+          // Fixed Bottom Actions — SafeArea prevents overflow
+          SafeArea(
+            top: false,
             child: Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
+                color: Colors.white.withValues(alpha: 0.97),
                 border: Border(
                   top: BorderSide(
                     color: _border.withValues(alpha: 0.2),
@@ -289,59 +257,43 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                   ),
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
                 children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _primary,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: _primary.withValues(alpha: 0.2),
-                      minimumSize: const Size.fromHeight(56),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: _handleGrantAll,
-                    child: _isRequesting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            _isGranted ? 'Next' : 'Continue',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
+                  // Back button
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
                       foregroundColor: _secondary,
+                      side: const BorderSide(color: _border),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
+                      minimumSize: const Size(56, 52),
+                      padding: EdgeInsets.zero,
                     ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please review and enable necessary protection permissions.'),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Icon(Icons.arrow_back_rounded, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  // Continue button
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _primary,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: _primary.withValues(alpha: 0.2),
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      );
-                    },
-                    child: const Text(
-                      'Review Separately',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      ),
+                      onPressed: _handleContinue,
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -360,11 +312,11 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     required String description,
     required bool value,
     required ValueChanged<bool> onChanged,
-    required bool showCheck,
+    bool required = false,
   }) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
-      color: showCheck ? _primary.withValues(alpha: 0.04) : Colors.transparent,
+      color: Colors.transparent,
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,8 +328,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              showCheck ? Icons.check_circle : icon,
-              color: showCheck ? _tertiaryContainer : _primary,
+              icon,
+              color: _primary,
               size: 24,
             ),
           ),
@@ -389,17 +341,34 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: _onSurface,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: _onSurface,
+                            ),
+                          ),
+                          if (required) ...[
+                            const SizedBox(width: 4),
+                            const Text(
+                              '*',
+                              style: TextStyle(
+                                color: Color(0xFFB90009),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     CustomSwitch(
                       value: value,
-                      onChanged: showCheck ? (_) {} : onChanged,
+                      onChanged: onChanged,
                     ),
                   ],
                 ),

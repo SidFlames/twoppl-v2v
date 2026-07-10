@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'voice_profile_created_screen.dart';
 
 class SecretPhraseSetupScreen extends StatefulWidget {
   const SecretPhraseSetupScreen({super.key});
@@ -495,15 +496,14 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
                   ),
                   onPressed: _recordCount >= 3
                       ? () {
-                          // Navigate to next step (Recording Step 2)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Voice enrollment complete!'),
-                              backgroundColor: Color(0xFF003D9B),
+                          // Navigate to VoiceProfileCreatedScreen
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => VoiceProfileCreatedScreen(
+                                secretPhrase: _selectedPhrase,
+                              ),
                             ),
                           );
-                          Navigator.of(context)
-                              .popUntil((route) => route.isFirst);
                         }
                       : null,
                   child: const Row(
