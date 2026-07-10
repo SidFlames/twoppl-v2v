@@ -120,6 +120,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           ),
         ],
       ),
+      bottomNavigationBar: const SharedBottomNav(currentTab: BottomNavTab.home),
       body: SafeArea(
         child: Column(
           children: [
@@ -509,9 +510,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 ),
               ),
             ),
-
-            // Bottom Navigation Bar
-            const SharedBottomNav(currentTab: BottomNavTab.home),
           ],
         ),
       ),
