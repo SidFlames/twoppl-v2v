@@ -255,29 +255,20 @@ class _VoiceProfileCreatedScreenState extends State<VoiceProfileCreatedScreen>
               ),
               const SizedBox(height: 16),
 
-              // AES enrolled badge
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF003D9B), Color(0xFF0052CC)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Column(
+              // AES enrolled badge (Subtle Fine Print)
+              const Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.lock_outline, color: Colors.white, size: 26),
-                    SizedBox(height: 6),
+                    Icon(Icons.lock_outline, color: _secondary, size: 14),
+                    SizedBox(width: 6),
                     Text(
-                      '256-bit AES Enrolled',
+                      'Voice profile secured with 256-bit AES encryption',
                       style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: -0.2,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _secondary,
+                        letterSpacing: -0.1,
                       ),
                     ),
                   ],
