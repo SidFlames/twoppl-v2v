@@ -652,16 +652,17 @@ class _MapBackground extends StatelessWidget {
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.safesphere.lumora',
         ),
-        PolylineLayer(
-          polylines: [
-            Polyline(
-              points: routePoints,
-              color: const Color(0xFF003D9B),
-              strokeWidth: 5,
-              isDotted: false,
-            ),
-          ],
-        ),
+        if (routePoints.length >= 2)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: routePoints,
+                color: const Color(0xFF003D9B),
+                strokeWidth: 5,
+                isDotted: false,
+              ),
+            ],
+          ),
         MarkerLayer(
           markers: [
             // Destination marker
