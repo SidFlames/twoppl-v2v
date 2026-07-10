@@ -19,9 +19,14 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
   static const _error = Color(0xFFBA1A1A);
   static const _surfaceContainerLowest = Color(0xFFFFFFFF);
   static const _surfaceContainerLow = Color(0xFFF6F3F5);
+  static const _success = Color(0xFF006D32);
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
+  late final AnimationController _toggleController;
+  late final Animation<double> _toggleAnimation;
+
+  bool _isGuardianModeActive = true;
 
   @override
   void initState() {
@@ -34,12 +39,39 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
     _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeOut),
     );
+
+    _toggleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _toggleAnimation = CurvedAnimation(
+      parent: _toggleController,
+      curve: Curves.easeInOut,
+    );
+
+    // Start with active state
+    _toggleController.value = 1.0;
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _toggleController.dispose();
     super.dispose();
+  }
+
+  void _toggleGuardianMode() {
+    setState(() {
+      _isGuardianModeActive = !_isGuardianModeActive;
+      if (_isGuardianModeActive) {
+        _toggleController.forward();
+        _pulseController.repeat();
+      } else {
+        _toggleController.reverse();
+        _pulseController.stop();
+      }
+    });
   }
 
   @override
@@ -90,13 +122,14 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                           AnimatedBuilder(
                             animation: _pulseAnimation,
                             builder: (context, child) {
+                              if (!_isGuardianModeActive) return const SizedBox.shrink();
                               return Container(
                                 width: 140,
                                 height: 140,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: _primary.withValues(alpha: 0.4 * (1.0 - _pulseAnimation.value)),
+                                    color: _success.withValues(alpha: 0.4 * (1.0 - _pulseAnimation.value)),
                                     width: 1 + (20 * _pulseAnimation.value),
                                   ),
                                 ),
@@ -108,35 +141,39 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                             height: 96,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _primaryContainer.withValues(alpha: 0.25),
+                              color: (_isGuardianModeActive ? _success : _error).withValues(alpha: 0.15),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.shield_rounded,
-                                color: _primary,
+                                color: _isGuardianModeActive ? _success : _error,
                                 size: 48,
                               ),
                             ),
                           ),
                           Positioned(
                             bottom: 0,
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
-                                color: _primary,
+                                color: _isGuardianModeActive ? _success : _outlineVariant,
                                 borderRadius: BorderRadius.circular(99),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                                boxShadow: _isGuardianModeActive
+                                    ? [
+                                        BoxShadow(
+                                          color: _success.withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
                               ),
-                              child: const Text(
-                                'ACTIVE',
+                              child: Text(
+                                _isGuardianModeActive ? 'ACTIVE' : 'INACTIVE',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _isGuardianModeActive ? Colors.white : _onSurfaceVariant,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 1.0,
@@ -148,10 +185,112 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Protected',
+
+                    // Guardian Mode Toggle Switch
+                    AnimatedBuilder(
+                      animation: _toggleAnimation,
+                      builder: (context, child) {
+                        return GestureDetector(
+                          onTap: _toggleGuardianMode,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            width: 80,
+                            height: 44,
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(22),
+                              color: _isGuardianModeActive
+                                  ? _success
+                                  : _outlineVariant.withValues(alpha: 0.5),
+                              boxShadow: _isGuardianModeActive
+                                  ? [
+                                      BoxShadow(
+                                        color: _success.withValues(alpha: 0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Background labels
+                                Positioned(
+                                  left: 12,
+                                  child: Opacity(
+                                    opacity: _isGuardianModeActive ? 0.0 : 1.0,
+                                    child: const Text(
+                                      'OFF',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 12,
+                                  child: Opacity(
+                                    opacity: _isGuardianModeActive ? 1.0 : 0.0,
+                                    child: const Text(
+                                      'ON',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Thumb
+                                AnimatedAlign(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  alignment: _isGuardianModeActive
+                                      ? Alignment.centerRight
+                                      : Alignment.centerLeft,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.15),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        _isGuardianModeActive
+                                            ? Icons.shield_rounded
+                                            : Icons.shield_outlined,
+                                        color: _isGuardianModeActive ? _success : _secondary,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    Text(
+                      _isGuardianModeActive ? 'Protected' : 'Unprotected',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: _onSurface,
@@ -159,10 +298,10 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Real-time surveillance active',
+                    Text(
+                      _isGuardianModeActive ? 'Real-time surveillance active' : 'Real-time surveillance inactive',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: _secondary,
                       ),
@@ -579,30 +718,37 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
                 child: SizedBox(
                   width: double.infinity,
                   height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _error,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: _error.withValues(alpha: 0.2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.stop_circle, size: 22),
-                        SizedBox(width: 8),
-                        Text(
-                          'Turn Protection Off',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isGuardianModeActive ? _error : _success,
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: (_isGuardianModeActive ? _error : _success).withValues(alpha: 0.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      ],
+                      ),
+                      onPressed: _toggleGuardianMode,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _isGuardianModeActive ? Icons.stop_circle : Icons.shield_rounded,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _isGuardianModeActive ? 'Turn Protection Off' : 'Turn Protection On',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
