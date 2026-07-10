@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../utils/sos_controller.dart';
 
 class JourneyTrackingScreen extends StatefulWidget {
@@ -205,26 +206,29 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
       String audioUrl = 'https://res.cloudinary.com/demo/video/upload/sample_audio.mp3'; // Fallback demo URL
 
       try {
-        // Upload to Cloudinary if credentials are set (REST endpoint)
         final file = File(filePath);
         if (file.existsSync()) {
-          final dio = Dio();
-          final formData = FormData.fromMap({
-            'file': await MultipartFile.fromFile(filePath),
-            'upload_preset': 'safesphere_presets', 
-          });
+          final cloudName = dotenv.get('CLOUDINARY_CLOUD_NAME');
+          final uploadPreset = dotenv.get('CLOUDINARY_UPLOAD_PRESET');
+          
+          if (cloudName.isNotEmpty && uploadPreset.isNotEmpty) {
+            final dio = Dio();
+            final formData = FormData.fromMap({
+              'file': await MultipartFile.fromFile(filePath),
+              'upload_preset': uploadPreset, 
+            });
 
-          // Upload endpoint (replace cloud_name with user credentials later)
-          final response = await dio.post(
-            'https://api.cloudinary.com/v1_1/safesphere_cloud/auto/upload',
-            data: formData,
-          );
-          if (response.statusCode == 200) {
-            audioUrl = response.data['secure_url'] ?? audioUrl;
+            final response = await dio.post(
+              'https://api.cloudinary.com/v1_1/$cloudName/auto/upload',
+              data: formData,
+            );
+            if (response.statusCode == 200) {
+              audioUrl = response.data['secure_url'] ?? audioUrl;
+            }
           }
         }
-      } catch (_) {
-        // If Cloudinary endpoints are not configured yet, continue with fallback demo url
+      } catch (e) {
+        debugPrint('Cloudinary real upload failed: $e');
       }
 
       if (_currentEmergencyId != null) {
