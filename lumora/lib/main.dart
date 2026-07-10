@@ -551,6 +551,10 @@ class _OtpScreenState extends State<OtpScreen> {
       _focusNodes[index - 1].requestFocus();
     }
     setState(() {});
+    // Auto-verify when the last digit is entered
+    if (index == _controllers.length - 1 && value.isNotEmpty) {
+      _verifyOtp();
+    }
   }
 
   void _clearLastDigit() {
@@ -560,6 +564,24 @@ class _OtpScreenState extends State<OtpScreen> {
         _focusNodes[index].requestFocus();
         break;
       }
+    }
+  }
+
+  void _verifyOtp() {
+    final otp = _controllers.map((c) => c.text).join();
+    if (otp == '123456') {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CreateProfileScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid OTP. Please enter 123456.'),
+          backgroundColor: Color(0xFFCC0000),
+        ),
+      );
     }
   }
 
@@ -644,7 +666,6 @@ class _OtpScreenState extends State<OtpScreen> {
                               onChanged: (value) {
                                 _onDigitChanged(index, value);
                               },
-                              onEditingComplete: () => _clearLastDigit(),
                             ),
                           );
                         }),
