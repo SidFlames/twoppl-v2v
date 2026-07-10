@@ -6,6 +6,7 @@ import '../widgets/shared_bottom_nav.dart';
 import 'journey_tracking_screen.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../services/routing_service.dart';
 
 class LocationEntryScreen extends StatefulWidget {
   const LocationEntryScreen({super.key});
@@ -33,6 +34,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
 
   String? _safestRouteId;
   String? _fastestRouteId;
+  List<LatLng>? _routeGeometry;
 
   @override
   void dispose() {
@@ -47,17 +49,33 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
       final firestore = FirebaseFirestore.instance;
       final uuid = const Uuid();
 
-      _safestRouteId = uuid.v4();
-      _fastestRouteId = uuid.v4();
-
       final origin = _originController.text;
       final destination = _destinationController.text;
 
-      // 1. Create records in 'routes'
+      // 1. Geocode origin and destination
+      final originLatLng = await RoutingService.geocodeAddress(origin) 
+          ?? const LatLng(28.6139, 77.2090); // default fallback
+      final destLatLng = await RoutingService.geocodeAddress(destination)
+          ?? const LatLng(28.6273, 77.3725); // default fallback
+
+      // 2. Fetch routing geometry
+      final routeGeometry = await RoutingService.getDrivingRoute(
+        origin: originLatLng, 
+        destination: destLatLng,
+      );
+
+      // Serialize geometry for Firestore
+      final geometryString = routeGeometry.map((ll) => '${ll.latitude},${ll.longitude}').join('|');
+
+      _safestRouteId = uuid.v4();
+      _fastestRouteId = uuid.v4();
+
+      // 3. Create records in 'routes'
       await firestore.collection('routes').doc(_safestRouteId).set({
         'routeId': _safestRouteId,
         'origin': origin,
         'destination': destination,
+        'geometry': geometryString,
         'safestRouteId': _safestRouteId,
       });
 
@@ -65,15 +83,16 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
         'routeId': _fastestRouteId,
         'origin': origin,
         'destination': destination,
+        'geometry': geometryString,
         'safestRouteId': _safestRouteId,
       });
 
-      // 2. Create records in 'route_analysis' (police stations, hospitals, gas stations count)
+      // 4. Create records in 'route_analysis'
       await firestore.collection('route_analysis').doc(_safestRouteId).set({
         'routeId': _safestRouteId,
         'safetyScore': 96,
         'reasons': [
-          'High density of police stations along Ring Rd',
+          'High density of police stations along path',
           '3 24/7 hospitals located on route',
           'Well-lit street lights verified'
         ],
@@ -89,6 +108,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
       });
 
       setState(() {
+        _routeGeometry = routeGeometry;
         _isAnalyzed = true;
         _isAnalyzing = false;
       });
@@ -126,9 +146,13 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => JourneyTrackingScreen(rideId: rideId),
+            builder: (context) => JourneyTrackingScreen(
+              rideId: rideId,
+              routePoints: _routeGeometry ?? [],
+            ),
           ),
         );
+
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
