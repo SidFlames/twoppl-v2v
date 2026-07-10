@@ -426,26 +426,68 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _bypassOtpFlow(BuildContext context, String phone) async {
     setState(() => _isLoading = true);
+    final demoEmail = 'demo${phone.replaceAll("+", "")}@safesphere.com';
+    const demoPassword = 'safesphere123';
+
     try {
-      // Sign in anonymously to get a valid user session for Firestore access
-      await FirebaseAuth.instance.signInAnonymously();
+      // 1. Try to sign in with this demo email
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: demoEmail,
+        password: demoPassword,
+      );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Demo Bypass Activated: Logged in anonymously.'),
+          content: Text('Demo Bypass: Signed in successfully.'),
           backgroundColor: Colors.green,
         ),
       );
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Bypass failed: $e')),
-      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
+        try {
+          // 2. If user doesn't exist, create it
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: demoEmail,
+            password: demoPassword,
+          );
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Demo Bypass: Registered and signed in successfully.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
+          );
+        } catch (createErr) {
+          // 3. Absolute offline fallback: Go directly to dashboard with mock UI values
+          _navigateOfflineBypass(context);
+        }
+      } else {
+        _navigateOfflineBypass(context);
+      }
+    } catch (_) {
+      _navigateOfflineBypass(context);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _navigateOfflineBypass(BuildContext context) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Demo Bypass: Running in offline mock mode.'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
+    );
   }
 
   @override
