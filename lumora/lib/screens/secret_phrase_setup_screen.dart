@@ -510,7 +510,7 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Start Enrollment',
+                        'End Enrollment',
                         style: TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700),
                       ),
