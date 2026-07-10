@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,8 +15,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Initialize background voice service (does not start it — just registers)
-  await VoiceBackgroundService.initializeService();
+  // Background voice service — Android/iOS only (not supported on web)
+  if (!kIsWeb) {
+    await VoiceBackgroundService.initializeService();
+  }
   runApp(const LumoraApp());
 }
 
