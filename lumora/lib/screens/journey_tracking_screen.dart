@@ -9,6 +9,8 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../utils/sos_controller.dart';
 
 class JourneyTrackingScreen extends StatefulWidget {
@@ -42,6 +44,15 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   bool _isRecording = false;
   String? _currentEmergencyId;
 
+
+  // ── map ───────────────────────────────────────────────────────────────────
+  final MapController _mapController = MapController();
+  LatLng _currentPosition = const LatLng(28.6139, 77.2090); // default: Connaught Place
+  final List<LatLng> _routePoints = [
+    const LatLng(28.6139, 77.2090),
+    const LatLng(28.6200, 77.3000),
+    const LatLng(28.6273, 77.3725),
+  ];
 
   // ── simulated live values ─────────────────────────────────────────────────
   int _etaMin = 18;
@@ -87,6 +98,17 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
         // Fallback to simulated coords
       }
 
+      // Update map marker + camera to follow real/simulated position
+      if (mounted) {
+        setState(() {
+          _currentPosition = LatLng(lat, lng);
+        });
+        try {
+          _mapController.move(_currentPosition, 15.0);
+        } catch (_) {}
+      }
+
+
       // Write location coordinate to Firestore collection 'ride_locations'
       try {
         final firestore = FirebaseFirestore.instance;
@@ -130,6 +152,7 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
     _pulseController.dispose();
     _liveTimer.cancel();
     _audioRecorder.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -271,7 +294,11 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
       body: Stack(
         children: [
           // ── full-bleed map ──────────────────────────────────────────────
-          Positioned.fill(child: _MapBackground()),
+          Positioned.fill(child: _MapBackground(
+            mapController: _mapController,
+            currentPosition: _currentPosition,
+            routePoints: _routePoints,
+          )),
 
           // ── gradient fade at bottom ────────────────────────────────────
           Positioned(
@@ -655,132 +682,92 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   }
 }
 
-// ── Custom map background painter ──────────────────────────────────────────
+// ── Live OSM Map Background ──────────────────────────────────────────────────
 class _MapBackground extends StatelessWidget {
+  const _MapBackground({
+    required this.mapController,
+    required this.currentPosition,
+    required this.routePoints,
+  });
+
+  final MapController mapController;
+  final LatLng currentPosition;
+  final List<LatLng> routePoints;
+
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _MapPainter(),
-      size: Size.infinite,
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: currentPosition,
+        initialZoom: 15.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.safesphere.lumora',
+        ),
+        PolylineLayer(
+          polylines: [
+            Polyline(
+              points: routePoints,
+              color: const Color(0xFF003D9B),
+              strokeWidth: 5,
+              isDotted: false,
+            ),
+          ],
+        ),
+        MarkerLayer(
+          markers: [
+            // Destination marker
+            Marker(
+              point: routePoints.last,
+              width: 40,
+              height: 40,
+              child: const Icon(Icons.flag, color: Color(0xFFBA1A1A), size: 35),
+            ),
+            // Current position marker with pulsing dot style
+            Marker(
+              point: currentPosition,
+              width: 50,
+              height: 50,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF003D9B).withValues(alpha: 0.15),
+                    ),
+                  ),
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF003D9B).withValues(alpha: 0.30),
+                    ),
+                  ),
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF003D9B),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
-  }
-}
-
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = const Color(0xFFE8EEF7);
-    canvas.drawRect(Offset.zero & size, bg);
-
-    // ── grid streets ─────────────────────────────────────────────────────
-    final streetPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 18
-      ..strokeCap = StrokeCap.round;
-
-    final minorPaint = Paint()
-      ..color = const Color(0xFFD8E2F0)
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-
-    // horizontal streets
-    for (int i = 1; i <= 8; i++) {
-      final y = size.height * i / 9;
-      final paint = i % 3 == 0 ? streetPaint : minorPaint;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    // vertical streets
-    for (int i = 1; i <= 6; i++) {
-      final x = size.width * i / 7;
-      final paint = i % 2 == 0 ? streetPaint : minorPaint;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-
-    // ── blocks (buildings) ────────────────────────────────────────────────
-    final blockPaint = Paint()..color = const Color(0xFFCDD8EC);
-    final rng = _SimpleRng(42);
-    for (int r = 0; r < 5; r++) {
-      for (int c = 0; c < 4; c++) {
-        final bx = size.width * (c + 0.3) / 4.5;
-        final by = size.height * (r + 0.3) / 6;
-        final bw = 30.0 + rng.next() * 40;
-        final bh = 20.0 + rng.next() * 30;
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(bx, by, bw, bh),
-            const Radius.circular(4),
-          ),
-          blockPaint,
-        );
-      }
-    }
-
-    // ── blue route path ────────────────────────────────────────────────────
-    final routePaint = Paint()
-      ..color = const Color(0xFF003D9B)
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    final routeGlow = Paint()
-      ..color = const Color(0xFF003D9B).withValues(alpha: 0.18)
-      ..strokeWidth = 14
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    final path = Path()
-      ..moveTo(size.width * 0.25, size.height * 0.75)
-      ..lineTo(size.width * 0.25, size.height * 0.45)
-      ..lineTo(size.width * 0.57, size.height * 0.45)
-      ..lineTo(size.width * 0.57, size.height * 0.25);
-
-    canvas.drawPath(path, routeGlow);
-    canvas.drawPath(path, routePaint);
-
-    // ── destination pin ────────────────────────────────────────────────────
-    final pinPaint = Paint()..color = const Color(0xFF8C0005);
-    canvas.drawCircle(Offset(size.width * 0.57, size.height * 0.23), 8, pinPaint);
-    canvas.drawCircle(
-      Offset(size.width * 0.57, size.height * 0.23),
-      8,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-
-    // ── current location pulse ─────────────────────────────────────────────
-    final outerPulse = Paint()
-      ..color = const Color(0xFF003D9B).withValues(alpha: 0.15);
-    canvas.drawCircle(Offset(size.width * 0.25, size.height * 0.75), 22, outerPulse);
-
-    final midPulse = Paint()..color = const Color(0xFF003D9B).withValues(alpha: 0.25);
-    canvas.drawCircle(Offset(size.width * 0.25, size.height * 0.75), 14, midPulse);
-
-    final dot = Paint()..color = const Color(0xFF003D9B);
-    canvas.drawCircle(Offset(size.width * 0.25, size.height * 0.75), 7, dot);
-    canvas.drawCircle(
-      Offset(size.width * 0.25, size.height * 0.75),
-      7,
-      Paint()
-        ..color = Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-// tiny deterministic pseudo-random helper (no dart:math Random seeding quirks)
-class _SimpleRng {
-  int _state;
-  _SimpleRng(this._state);
-  double next() {
-    _state = (_state * 1664525 + 1013904223) & 0xFFFFFFFF;
-    return (_state & 0xFFFF) / 0xFFFF;
   }
 }
