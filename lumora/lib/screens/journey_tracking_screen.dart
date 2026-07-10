@@ -665,12 +665,13 @@ class _MapBackground extends StatelessWidget {
         MarkerLayer(
           markers: [
             // Destination marker
-            Marker(
-              point: routePoints.last,
-              width: 40,
-              height: 40,
-              child: const Icon(Icons.flag, color: Color(0xFFBA1A1A), size: 35),
-            ),
+            if (routePoints.isNotEmpty)
+              Marker(
+                point: routePoints.last,
+                width: 40,
+                height: 40,
+                child: const Icon(Icons.flag, color: Color(0xFFBA1A1A), size: 35),
+              ),
             // Current position marker with pulsing dot style
             Marker(
               point: currentPosition,
