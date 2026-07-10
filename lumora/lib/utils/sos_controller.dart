@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../screens/active_emergency_screen.dart';
+import '../screens/emergency_active_screen.dart';
 
 class SosController {
   // ── Singleton setup ───────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ class SosController {
   void _triggerSos(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => const ActiveEmergencyScreen(),
+        builder: (_) => const EmergencyActiveScreen(),
       ),
     );
   }
