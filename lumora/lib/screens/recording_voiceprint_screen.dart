@@ -25,13 +25,33 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
 
   late final AnimationController _pulseController;
   late final AnimationController _waveController;
+  late final AnimationController _progressController;
 
   bool _isRecording = true;
-  int _attempt = 1;
+  bool _analysisComplete = false;
+
+  // Status labels shown as progress advances
+  static const List<String> _statusMessages = [
+    'Listening to your voice…',
+    'Analysing vocal patterns…',
+    'Mapping voice signature…',
+    'Almost done — keep speaking…',
+    'Voiceprint captured!',
+  ];
+
+  String get _currentStatus {
+    final v = _progressController.value;
+    if (v < 0.2) return _statusMessages[0];
+    if (v < 0.45) return _statusMessages[1];
+    if (v < 0.7) return _statusMessages[2];
+    if (v < 0.95) return _statusMessages[3];
+    return _statusMessages[4];
+  }
 
   @override
   void initState() {
     super.initState();
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -42,56 +62,55 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
       duration: const Duration(milliseconds: 1200),
     )..repeat();
 
-    _startSimulatedRecording();
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    );
+
+    _progressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() {
+          _analysisComplete = true;
+          _isRecording = false;
+        });
+        _waveController.stop();
+        Future.delayed(const Duration(milliseconds: 900), () {
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(
+              builder: (_) => const SecretPhraseSetupScreen(),
+            ),
+          );
+        });
+      }
+    });
+
+    _progressController.forward();
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     _waveController.dispose();
+    _progressController.dispose();
     super.dispose();
-  }
-
-  void _startSimulatedRecording() {
-    if (!_isRecording) return;
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      if (_attempt < 3) {
-        setState(() {
-          _attempt++;
-        });
-        _startSimulatedRecording();
-      } else {
-        setState(() {
-          _isRecording = false;
-        });
-        // Auto navigate to SecretPhraseSetupScreen (Create step)
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(
-            builder: (_) => const SecretPhraseSetupScreen(),
-          ),
-        );
-      }
-    });
   }
 
   void _toggleRecording() {
     setState(() {
       _isRecording = !_isRecording;
     });
-
     if (_isRecording) {
       _waveController.repeat();
-      _startSimulatedRecording();
+      _progressController.forward();
     } else {
       _waveController.stop();
+      _progressController.stop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double completionPercent = (_attempt - 1) / 3.0;
-
     return Scaffold(
       backgroundColor: _surface,
       appBar: AppBar(
@@ -125,8 +144,7 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
             children: [
               // Step Badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: _primaryContainer.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
@@ -143,7 +161,7 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
               ),
               const SizedBox(height: 10),
 
-              // Header Title
+              // Title
               const Text(
                 'Recording Voiceprint',
                 style: TextStyle(
@@ -162,14 +180,14 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
               ),
               const SizedBox(height: 24),
 
-              // Recording Visualization Centerpiece
+              // Waveform visualizer
               SizedBox(
                 width: 240,
                 height: 240,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Background Glow Pulse
+                    // Pulse glow
                     AnimatedBuilder(
                       animation: _pulseController,
                       builder: (context, child) {
@@ -195,7 +213,7 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
                         );
                       },
                     ),
-                    // Inner Circle border
+                    // Inner border ring
                     Container(
                       width: 170,
                       height: 170,
@@ -207,7 +225,7 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
                         ),
                       ),
                     ),
-                    // Waveform Bars Animated
+                    // Waveform bars
                     AnimatedBuilder(
                       animation: _waveController,
                       builder: (context, child) {
@@ -219,7 +237,7 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
                                     (index * 0.4));
                             final double scaleY = _isRecording
                                 ? 0.3 + (waveVal.abs() * 0.7)
-                                : 0.2;
+                                : 0.15;
                             return Container(
                               width: 6,
                               height: 60,
@@ -229,7 +247,9 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
                                 alignment: Alignment.center,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: _primary,
+                                    color: _isRecording
+                                        ? _primary
+                                        : _primary.withValues(alpha: 0.3),
                                     borderRadius: BorderRadius.circular(99),
                                   ),
                                 ),
@@ -242,12 +262,12 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Phrase Box
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: _primaryContainer.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
@@ -269,45 +289,59 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
               ),
               const SizedBox(height: 24),
 
-              // Progress Display
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Progress Bar Section
+              AnimatedBuilder(
+                animation: _progressController,
+                builder: (context, child) {
+                  final pct = _progressController.value;
+                  return Column(
                     children: [
-                      Text(
-                        'Attempt $_attempt of 3',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: _secondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _analysisComplete
+                                ? 'Voice profile captured!'
+                                : _currentStatus,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _analysisComplete
+                                  ? const Color(0xFF1A7A3C)
+                                  : _primary,
+                            ),
+                          ),
+                          Text(
+                            '${(pct * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _primary,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${(completionPercent * 100).toInt()}% Complete',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: _primary,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(99),
+                        child: LinearProgressIndicator(
+                          value: pct,
+                          minHeight: 8,
+                          backgroundColor: _surfaceContainer,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _analysisComplete
+                                ? const Color(0xFF1A7A3C)
+                                : _primary,
+                          ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: LinearProgressIndicator(
-                      value: completionPercent,
-                      minHeight: 8,
-                      backgroundColor: _surfaceContainer,
-                      valueColor: const AlwaysStoppedAnimation<Color>(_primary),
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
               const SizedBox(height: 24),
 
-              // Requirements List
+              // Requirement tiles
               _RequirementRow(
                 icon: Icons.record_voice_over,
                 title: 'Speak clearly',
@@ -327,20 +361,23 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
               ),
               const SizedBox(height: 32),
 
-              // Action buttons
+              // Stop / Resume button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                    backgroundColor: _primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: _isRecording
+                        ? _primary
+                        : _primaryContainer.withValues(alpha: 0.15),
+                    foregroundColor:
+                        _isRecording ? Colors.white : _primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    elevation: 2,
+                    elevation: _isRecording ? 2 : 0,
                   ),
-                  onPressed: _toggleRecording,
+                  onPressed: _analysisComplete ? null : _toggleRecording,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -350,7 +387,11 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _isRecording ? 'Stop Recording' : 'Resume Recording',
+                        _analysisComplete
+                            ? 'Complete!'
+                            : _isRecording
+                                ? 'Stop Recording'
+                                : 'Resume Recording',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,

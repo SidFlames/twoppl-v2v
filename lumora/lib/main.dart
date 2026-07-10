@@ -695,36 +695,6 @@ class _OtpScreenState extends State<OtpScreen> {
                         child: const Text('Verify', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(height: 32),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 12,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 1.1,
-                        ),
-                        itemBuilder: (context, index) {
-                          if (index == 9) return const SizedBox.shrink();
-                          if (index == 11) {
-                            return _KeypadKey(
-                              icon: Icons.backspace_outlined,
-                              onTap: _clearLastDigit,
-                            );
-                          }
-                          final digit = index < 9 ? (index + 1).toString() : '0';
-                          return _KeypadKey(
-                            label: digit,
-                            onTap: () {
-                              final emptyIndex = _controllers.indexWhere((controller) => controller.text.isEmpty);
-                              if (emptyIndex == -1) return;
-                              _controllers[emptyIndex].text = digit;
-                              _onDigitChanged(emptyIndex, digit);
-                            },
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),
@@ -808,39 +778,6 @@ class _PhoneFieldState extends State<_PhoneField> {
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: Color(0xFF0C56D0), width: 1.5),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _KeypadKey extends StatelessWidget {
-  const _KeypadKey({this.label, this.icon, required this.onTap});
-
-  final String? label;
-  final IconData? icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFCF8FB),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFC3C6D6)),
-          ),
-          alignment: Alignment.center,
-          child: icon != null
-              ? Icon(icon, color: const Color(0xFF1B1B1D))
-              : Text(
-                  label ?? '',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1B1B1D)),
-                ),
         ),
       ),
     );
