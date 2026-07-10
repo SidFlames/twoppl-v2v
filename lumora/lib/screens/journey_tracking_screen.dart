@@ -14,8 +14,9 @@ import 'package:latlong2/latlong.dart';
 import '../utils/sos_controller.dart';
 
 class JourneyTrackingScreen extends StatefulWidget {
-  const JourneyTrackingScreen({super.key, required this.rideId});
+  const JourneyTrackingScreen({super.key, required this.rideId, required this.routePoints});
   final String rideId;
+  final List<LatLng> routePoints;
 
   @override
   State<JourneyTrackingScreen> createState() => _JourneyTrackingScreenState();
@@ -47,12 +48,8 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
 
   // ── map ───────────────────────────────────────────────────────────────────
   final MapController _mapController = MapController();
-  LatLng _currentPosition = const LatLng(28.6139, 77.2090); // default: Connaught Place
-  final List<LatLng> _routePoints = [
-    const LatLng(28.6139, 77.2090),
-    const LatLng(28.6200, 77.3000),
-    const LatLng(28.6273, 77.3725),
-  ];
+  late LatLng _currentPosition;
+
 
   // ── simulated live values ─────────────────────────────────────────────────
   int _etaMin = 18;
@@ -63,6 +60,10 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   @override
   void initState() {
     super.initState();
+    _currentPosition = widget.routePoints.isNotEmpty 
+        ? widget.routePoints.first 
+        : const LatLng(28.6139, 77.2090);
+
 
     _pulseController = AnimationController(
       vsync: this,
@@ -297,7 +298,7 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
           Positioned.fill(child: _MapBackground(
             mapController: _mapController,
             currentPosition: _currentPosition,
-            routePoints: _routePoints,
+            routePoints: widget.routePoints,
           )),
 
           // ── gradient fade at bottom ────────────────────────────────────
