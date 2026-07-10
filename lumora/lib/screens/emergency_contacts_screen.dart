@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'voice_enrollment_intro_screen.dart';
 
 class ContactItem {
   final String name;
@@ -497,13 +498,11 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                   elevation: 2,
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Contacts saved successfully!'),
-                      backgroundColor: _primary,
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const VoiceEnrollmentIntroScreen(),
                     ),
                   );
-                  Navigator.of(context).pop();
                 },
                 child: const Text(
                   'Save & Continue',
