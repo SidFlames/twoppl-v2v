@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 class GuardianModeDashboardScreen extends StatefulWidget {
   const GuardianModeDashboardScreen({super.key, this.initialActive = true});
@@ -116,6 +117,14 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
+        // Start / stop background voice service based on guardian mode state
+        final bgService = FlutterBackgroundService();
+        if (nextState) {
+          await bgService.startService();
+        } else {
+          bgService.invoke('stopService');
+        }
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)

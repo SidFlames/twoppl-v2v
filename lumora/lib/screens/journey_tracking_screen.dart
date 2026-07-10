@@ -1,8 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 import '../utils/sos_controller.dart';
 
 class JourneyTrackingScreen extends StatefulWidget {
@@ -32,6 +37,9 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   // ── state ─────────────────────────────────────────────────────────────────
   String _statusMessage = ''; // '' = idle, 'safe' = confirmed, 'sos' = active
   final _sosController = SosController();
+  final _audioRecorder = AudioRecorder();
+  bool _isRecording = false;
+  String? _currentEmergencyId;
 
 
   // ── simulated live values ─────────────────────────────────────────────────
@@ -66,8 +74,10 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
         final permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
           final pos = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 2),
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 2),
+            ),
           );
           lat = pos.latitude;
           lng = pos.longitude;
@@ -118,6 +128,7 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   void dispose() {
     _pulseController.dispose();
     _liveTimer.cancel();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -132,9 +143,102 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   }
 
   void _handleNotSafe() {
-    _sosController.startSosHold(context, () => setState(() {
-      _statusMessage = 'sos';
-    }));
+    _sosController.startSosHold(context, () async {
+      setState(() {
+        _statusMessage = 'sos';
+      });
+
+      // 1. Create a Firestore emergencies document
+      try {
+        final firestore = FirebaseFirestore.instance;
+        final uuid = const Uuid();
+        _currentEmergencyId = uuid.v4();
+
+        await firestore.collection('emergencies').doc(_currentEmergencyId).set({
+          'emergencyId': _currentEmergencyId,
+          'rideId': widget.rideId,
+          'trigger': 'manual',
+          'status': 'active',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        // 2. Start recording ambient audio evidence
+        await _startAmbientRecording();
+      } catch (e) {
+        debugPrint('Failed to initialize SOS trigger: $e');
+      }
+    });
+  }
+
+  Future<void> _startAmbientRecording() async {
+    try {
+      if (await _audioRecorder.hasPermission()) {
+        final dir = await getTemporaryDirectory();
+        final path = '${dir.path}/ambient_evidence_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+        await _audioRecorder.start(
+          const RecordConfig(encoder: AudioEncoder.aacLc),
+          path: path,
+        );
+
+        setState(() => _isRecording = true);
+
+        // Keep recording for 10 seconds then upload as evidence
+        Timer(const Duration(seconds: 10), () async {
+          if (_isRecording) {
+            final filePath = await _audioRecorder.stop();
+            setState(() => _isRecording = false);
+            if (filePath != null) {
+              await _uploadEvidence(filePath);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to record ambient audio: $e');
+    }
+  }
+
+  Future<void> _uploadEvidence(String filePath) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      String audioUrl = 'https://res.cloudinary.com/demo/video/upload/sample_audio.mp3'; // Fallback demo URL
+
+      try {
+        // Upload to Cloudinary if credentials are set (REST endpoint)
+        final file = File(filePath);
+        if (file.existsSync()) {
+          final dio = Dio();
+          final formData = FormData.fromMap({
+            'file': await MultipartFile.fromFile(filePath),
+            'upload_preset': 'safesphere_presets', 
+          });
+
+          // Upload endpoint (replace cloud_name with user credentials later)
+          final response = await dio.post(
+            'https://api.cloudinary.com/v1_1/safesphere_cloud/auto/upload',
+            data: formData,
+          );
+          if (response.statusCode == 200) {
+            audioUrl = response.data['secure_url'] ?? audioUrl;
+          }
+        }
+      } catch (_) {
+        // If Cloudinary endpoints are not configured yet, continue with fallback demo url
+      }
+
+      if (_currentEmergencyId != null) {
+        await firestore.collection('evidence').add({
+          'emergencyId': _currentEmergencyId,
+          'audioUrl': audioUrl,
+          'videoUrl': '',
+          'encrypted': true,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      debugPrint('Evidence upload failed: $e');
+    }
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────

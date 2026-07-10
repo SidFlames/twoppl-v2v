@@ -3,12 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/create_profile_screen.dart';
+import 'services/voice_background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Initialize background voice service (does not start it — just registers)
+  await VoiceBackgroundService.initializeService();
   runApp(const SafeSphereApp());
 }
 
