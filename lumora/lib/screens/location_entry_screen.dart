@@ -49,6 +49,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: const SharedBottomNav(currentTab: BottomNavTab.journey),
       body: Stack(
         children: [
           // Background Map
@@ -88,7 +89,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
             alignment: Alignment.bottomCenter,
             child: SingleChildScrollView(
               child: Container(
-                margin: const EdgeInsets.only(left: 16, right: 16, bottom: 90, top: 100),
+                margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 100),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -265,12 +266,6 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                 ),
               ),
             ),
-          ),
-
-          // Bottom Navigation Bar
-          const Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: SharedBottomNav(currentTab: BottomNavTab.journey),
           ),
         ],
       ),
