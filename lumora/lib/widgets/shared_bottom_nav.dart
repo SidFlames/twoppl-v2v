@@ -50,26 +50,30 @@ class _SharedBottomNavState extends State<SharedBottomNav> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: _outlineVariant.withValues(alpha: 0.3),
-            width: 1,
+    return SafeArea(
+      top: false,
+      bottom: true,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: _outlineVariant.withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
         ),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(icon: Icons.home, label: 'Home', tab: BottomNavTab.home),
-          _buildSosNavItem(),
-          _buildNavItem(icon: Icons.route, label: 'Journey', tab: BottomNavTab.journey),
-          _buildNavItem(icon: Icons.history, label: 'History', tab: BottomNavTab.history),
-          _buildNavItem(icon: Icons.person_outline, label: 'Profile', tab: BottomNavTab.profile),
-        ],
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(icon: Icons.home, label: 'Home', tab: BottomNavTab.home),
+            _buildSosNavItem(),
+            _buildNavItem(icon: Icons.route, label: 'Journey', tab: BottomNavTab.journey),
+            _buildNavItem(icon: Icons.history, label: 'History', tab: BottomNavTab.history),
+            _buildNavItem(icon: Icons.person_outline, label: 'Profile', tab: BottomNavTab.profile),
+          ],
+        ),
       ),
     );
   }
