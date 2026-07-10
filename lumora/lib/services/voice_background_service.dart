@@ -9,10 +9,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import '../firebase_options.dart';
 
+@pragma('vm:entry-point')
 class VoiceBackgroundService {
   static const String notificationChannelId = 'safesphere_voice_alerts';
   static const int notificationId = 888;
 
+  @pragma('vm:entry-point')
   static Future<void> initializeService() async {
     final service = FlutterBackgroundService();
 
