@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
 import 'package:record/record.dart';
@@ -179,8 +180,23 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
         final uuid = const Uuid();
         _currentEmergencyId = uuid.v4();
 
+        final user = FirebaseAuth.instance.currentUser;
+        final userId = user?.uid ?? '';
+        
+        String userName = 'Someone in your Circle';
+        try {
+          if (userId.isNotEmpty) {
+            final userDoc = await firestore.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+              userName = userDoc.data()?['name'] ?? userName;
+            }
+          }
+        } catch (_) {}
+
         await firestore.collection('emergencies').doc(_currentEmergencyId).set({
           'emergencyId': _currentEmergencyId,
+          'userId': userId,
+          'userName': userName,
           'rideId': widget.rideId,
           'trigger': 'manual',
           'status': 'active',

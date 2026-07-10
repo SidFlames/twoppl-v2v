@@ -89,9 +89,20 @@ class VoiceBackgroundService {
             final uuid = const Uuid();
             final emergencyId = uuid.v4();
 
+            // Fetch user's name from firestore
+            String userName = 'Someone in your Circle';
+            try {
+              final userDoc = await firestore.collection('users').doc(currentUser.uid).get();
+              if (userDoc.exists) {
+                userName = userDoc.data()?['name'] ?? userName;
+              }
+            } catch (_) {}
+
             // Create real Firestore record in 'emergencies' collection
             await firestore.collection('emergencies').doc(emergencyId).set({
               'emergencyId': emergencyId,
+              'userId': currentUser.uid,
+              'userName': userName,
               'rideId': '', // Standalone trigger, not tied to active journey
               'trigger': 'voice',
               'status': 'active',

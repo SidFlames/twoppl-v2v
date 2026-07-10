@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'guardian_mode_dashboard_screen.dart';
 import '../widgets/shared_bottom_nav.dart';
+import '../services/notification_service.dart';
+import 'package:uuid/uuid.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   const MainDashboardScreen({super.key});
@@ -45,11 +47,16 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
         }
       });
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService().initialize(context);
+    });
   }
 
   @override
   void dispose() {
     _userSubscription?.cancel();
+    NotificationService().dispose();
     super.dispose();
   }
 
@@ -67,6 +74,72 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             .collection('users')
             .doc(user.uid)
             .update({'guardianMode': result});
+      }
+    }
+  }
+
+  Future<void> _triggerDemoSOS() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hackathon Demo Mode'),
+        content: const Text('Do you want to simulate a voice SOS trigger ("Help Help") now? This will notify your active guardians.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBA1A1A),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Trigger SOS'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final firestore = FirebaseFirestore.instance;
+        final uuid = const Uuid();
+        final emergencyId = uuid.v4();
+
+        // Get user's name
+        String userName = 'Someone in your Circle';
+        final userDoc = await firestore.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          userName = userDoc.data()?['name'] ?? userName;
+        }
+
+        // Create the active emergency document in Firestore
+        await firestore.collection('emergencies').doc(emergencyId).set({
+          'emergencyId': emergencyId,
+          'userId': user.uid,
+          'userName': userName,
+          'rideId': '',
+          'trigger': 'voice',
+          'status': 'active',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mock SOS signal emitted! Other circle devices will receive the alert.'),
+            backgroundColor: Color(0xFFBA1A1A),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error triggering mock SOS: $e')),
+        );
       }
     }
   }
@@ -123,7 +196,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: _primary),
-            onPressed: () {},
+            onPressed: () => _triggerDemoSOS(),
           ),
           // User avatar
           Padding(
