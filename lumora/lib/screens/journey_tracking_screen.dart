@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../utils/sos_controller.dart';
 
 class JourneyTrackingScreen extends StatefulWidget {
   const JourneyTrackingScreen({super.key});
@@ -27,6 +28,7 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
 
   // ── state ─────────────────────────────────────────────────────────────────
   String _statusMessage = ''; // '' = idle, 'safe' = confirmed, 'sos' = active
+  final _sosController = SosController();
 
 
   // ── simulated live values ─────────────────────────────────────────────────
@@ -77,7 +79,9 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   }
 
   void _handleNotSafe() {
-    setState(() => _statusMessage = 'sos');
+    _sosController.startSosHold(context, () => setState(() {
+      _statusMessage = 'sos';
+    }));
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────

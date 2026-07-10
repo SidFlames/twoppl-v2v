@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/shared_bottom_nav.dart';
 import 'journey_tracking_screen.dart';
 
 class LocationEntryScreen extends StatefulWidget {
@@ -13,7 +14,6 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
   static const _secondary = Color(0xFF595F66);
   static const _onSurface = Color(0xFF1B1B1D);
   static const _outlineVariant = Color(0xFFC3C6D6);
-  static const _surface = Color(0xFFFCF8FB);
   static const _success = Color(0xFF1A7A3C);
   static const _surfaceContainerLow = Color(0xFFF6F3F5);
 
@@ -62,7 +62,7 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.of(context).maybePop(),
-                    child: const Icon(Icons.menu, color: _primary),
+                    child: const Icon(Icons.arrow_back, color: _primary),
                   ),
                   const Expanded(
                     child: Center(
@@ -268,24 +268,9 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
           ),
 
           // Bottom Navigation Bar
-          Positioned(
+          const Positioned(
             bottom: 0, left: 0, right: 0,
-            child: Container(
-              height: 70,
-              decoration: BoxDecoration(
-                color: _surface,
-                border: Border(top: BorderSide(color: _outlineVariant.withValues(alpha: 0.3))),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _navItem(Icons.home_outlined, 'Home', false),
-                  _navItem(Icons.route, 'Journey', true),
-                  _navItem(Icons.history, 'History', false),
-                  _navItem(Icons.person_outline, 'Profile', false),
-                ],
-              ),
-            ),
+            child: SharedBottomNav(currentTab: BottomNavTab.journey),
           ),
         ],
       ),
@@ -458,33 +443,6 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _navItem(IconData icon, String label, bool isSelected) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: isSelected
-              ? BoxDecoration(
-                  color: _primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
-                )
-              : null,
-          child: Icon(icon, color: isSelected ? _primary : _secondary, size: 24),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: isSelected ? _primary : _secondary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
     );
   }
 }
