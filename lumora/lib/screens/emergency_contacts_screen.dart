@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'voice_enrollment_intro_screen.dart';
 
 class ContactItem {
@@ -43,6 +45,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   static const _secondary = Color(0xFF595F66);
   static const _border = Color(0xFFC3C6D6);
   static const _lightBlue = Color(0xFFE8F0FE);
+  bool _isSaving = false;
 
   final List<ContactItem> _contacts = [
     ContactItem(name: 'Mom', phone: '+1 (555) 012-3456', isPrimary: true),
@@ -497,25 +500,74 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
                   ),
                   elevation: 2,
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const VoiceEnrollmentIntroScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Save & Continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                onPressed: _isSaving ? null : _saveContactsAndContinue,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 22, width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text(
+                        'Save & Continue',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _saveContactsAndContinue() async {
+    setState(() => _isSaving = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final firestore = FirebaseFirestore.instance;
+        final batch = firestore.batch();
+
+        // Optional: First delete existing contacts for this user to keep it in sync, 
+        // or simple add. Since it's onboarding, simple set is fine.
+        // Let's query and delete existing contacts first to prevent duplicates.
+        final existingContacts = await firestore
+            .collection('contacts')
+            .where('userId', isEqualTo: user.uid)
+            .get();
+
+        for (var doc in existingContacts.docs) {
+          batch.delete(doc.reference);
+        }
+
+        // Add current contacts
+        for (var i = 0; i < _contacts.length; i++) {
+          final contact = _contacts[i];
+          final docRef = firestore.collection('contacts').doc(); // Auto-ID
+          batch.set(docRef, {
+            'contactId': docRef.id,
+            'userId': user.uid,
+            'name': contact.name,
+            'phone': contact.phone,
+            'relation': contact.isPrimary ? 'primary' : 'secondary',
+          });
+        }
+
+        await batch.commit();
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const VoiceEnrollmentIntroScreen(),
+        ),
+      );
+    } catch (e) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save contacts: $e')),
+      );
+    }
   }
 }
