@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/create_profile_screen.dart';
 
 void main() {
   runApp(const SafeSphereApp());
@@ -674,7 +675,23 @@ class _OtpScreenState extends State<OtpScreen> {
                           minimumSize: const Size.fromHeight(52),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          final otp = _controllers.map((c) => c.text).join();
+                          if (otp == '123456') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => CreateProfileScreen(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Invalid OTP. Please enter 123456.'),
+                                backgroundColor: Color(0xFFCC0000),
+                              ),
+                            );
+                          }
+                        },
                         child: const Text('Verify', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(height: 32),
@@ -762,14 +779,13 @@ class _PhoneFieldState extends State<_PhoneField> {
         keyboardType: TextInputType.phone,
         style: const TextStyle(fontSize: 14, color: Color(0xFF1B1B1D)),
         decoration: InputDecoration(
-          prefixIconConstraints: const BoxConstraints(minWidth: 84),
+          prefixIconConstraints: const BoxConstraints(minWidth: 84, minHeight: 48),
           prefixIcon: Container(
-            margin: const EdgeInsets.only(left: 14, top: 12, bottom: 12),
+            margin: const EdgeInsets.only(left: 14, top: 14, bottom: 14),
             padding: const EdgeInsets.only(right: 12),
             decoration: const BoxDecoration(
               border: Border(right: BorderSide(color: Color(0xFFC3C6D6))),
             ),
-            alignment: Alignment.center,
             child: const Text(
               '+91',
               style: TextStyle(fontSize: 14, color: Color(0xFF595F66), fontWeight: FontWeight.w500),
