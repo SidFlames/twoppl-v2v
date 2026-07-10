@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'guardian_mode_dashboard_screen.dart';
-import 'location_entry_screen.dart';
+import '../widgets/shared_bottom_nav.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   const MainDashboardScreen({super.key});
@@ -10,7 +10,8 @@ class MainDashboardScreen extends StatefulWidget {
   State<MainDashboardScreen> createState() => _MainDashboardScreenState();
 }
 
-class _MainDashboardScreenState extends State<MainDashboardScreen> {
+class _MainDashboardScreenState extends State<MainDashboardScreen>
+    with SingleTickerProviderStateMixin {
   static const _primary = Color(0xFF003D9B);
   static const _primaryContainer = Color(0xFF0052CC);
   static const _secondary = Color(0xFF595F66);
@@ -20,13 +21,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   static const _surfaceContainerHigh = Color(0xFFEAE7EA);
   static const _surfaceContainerHighest = Color(0xFFE4E2E4);
   static const _successContainer = Color(0xFF1A7A3C);
-  static const _error = Color(0xFFBA1A1A);
   static const _errorContainer = Color(0xFF8C0005);
 
   bool _isGuardianModeActive = false;
-  double _sosProgress = 0.0;
-  Timer? _sosTimer;
-  DateTime? _holdStartTime;
 
   Future<void> _openGuardianMode() async {
     final result = await Navigator.of(context).push<bool>(
@@ -43,80 +40,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
       });
       debugPrint('Updated state to: $_isGuardianModeActive');
     }
-  }
-
-  void _openJourney() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LocationEntryScreen()),
-    );
-  }
-
-  void _startSosHold() {
-    setState(() {
-      _sosProgress = 0.0;
-      _holdStartTime = DateTime.now();
-    });
-
-    _sosTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (_holdStartTime == null) return;
-      final elapsed = DateTime.now().difference(_holdStartTime!).inMilliseconds;
-      final pct = elapsed / 3000.0; // 3 seconds hold
-
-      if (pct >= 1.0) {
-        _triggerSos();
-      } else {
-        setState(() {
-          _sosProgress = pct;
-        });
-      }
-    });
-  }
-
-  void _resetSosHold() {
-    _sosTimer?.cancel();
-    setState(() {
-      _sosProgress = 0.0;
-      _holdStartTime = null;
-    });
-  }
-
-  void _triggerSos() {
-    _sosTimer?.cancel();
-    setState(() {
-      _sosProgress = 1.0;
-      _holdStartTime = null;
-    });
-
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 8),
-            Text('SOS Triggered', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: const Text(
-          '🚨 EMERGENCY SOS ACTIVATED!\n\nYour trusted guardians have been notified of your location and environment audio feed.',
-          style: TextStyle(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Dismiss', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _sosTimer?.cancel();
-    super.dispose();
   }
 
   @override
@@ -588,108 +511,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             ),
 
             // Bottom Navigation Bar
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(
-                    color: _outlineVariant.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(icon: Icons.home, label: 'Home', active: true),
-                  _buildSosNavItem(),
-                  _buildNavItem(
-                    icon: Icons.route,
-                    label: 'Journey',
-                    onTap: _openJourney,
-                  ),
-                  _buildNavItem(icon: Icons.history, label: 'History'),
-                  _buildNavItem(icon: Icons.person_outline, label: 'Profile'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    bool active = false,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: active
-            ? BoxDecoration(
-                color: _primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              )
-            : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: active ? _primary : _secondary),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active ? _primary : _secondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSosNavItem() {
-    return GestureDetector(
-      onTapDown: (_) => _startSosHold(),
-      onTapUp: (_) => _resetSosHold(),
-      onTapCancel: () => _resetSosHold(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                if (_sosProgress > 0)
-                  SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      value: _sosProgress,
-                      color: _error,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                const Icon(Icons.report, color: _error, size: 28),
-              ],
-            ),
-            const SizedBox(height: 2),
-            const Text(
-              'SOS',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: _error,
-              ),
-            ),
+            const SharedBottomNav(currentTab: BottomNavTab.home),
           ],
         ),
       ),
