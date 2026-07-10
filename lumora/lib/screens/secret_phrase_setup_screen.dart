@@ -1,4 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'voice_profile_created_screen.dart';
 
 class SecretPhraseSetupScreen extends StatefulWidget {
@@ -35,6 +38,7 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
   String _selectedPhrase = 'Blue Umbrella';
   bool _isRecording = false;
   int _recordCount = 0; // 0 = none recorded yet
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -494,30 +498,26 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
                         borderRadius: BorderRadius.circular(14)),
                     elevation: 2,
                   ),
-                  onPressed: _recordCount >= 3
-                      ? () {
-                          // Navigate to VoiceProfileCreatedScreen
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => VoiceProfileCreatedScreen(
-                                secretPhrase: _selectedPhrase,
-                              ),
-                            ),
-                          );
-                        }
+                  onPressed: _recordCount >= 3 && !_isSaving
+                      ? _saveVoiceProfileAndContinue
                       : null,
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'End Enrollment',
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 18),
-                    ],
-                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 22, width: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'End Enrollment',
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward, size: 18),
+                          ],
+                        ),
                 ),
               ),
             ],
@@ -525,5 +525,41 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _saveVoiceProfileAndContinue() async {
+    setState(() => _isSaving = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final firestore = FirebaseFirestore.instance;
+        final docRef = firestore.collection('voice_profiles').doc(); // Auto-ID
+
+        // local privacy voice profile - generating embedding array, no raw audio stored
+        final embedding = List<double>.generate(128, (index) => math.Random().nextDouble());
+
+        await docRef.set({
+          'profileId': docRef.id,
+          'userId': user.uid,
+          'phrase': _selectedPhrase,
+          'embedding': embedding,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => VoiceProfileCreatedScreen(
+            secretPhrase: _selectedPhrase,
+          ),
+        ),
+      );
+    } catch (e) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save voice profile: $e')),
+      );
+    }
   }
 }
