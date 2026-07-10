@@ -308,227 +308,243 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(
+      body: Column(
         children: [
-          // ── full-bleed map ──────────────────────────────────────────────
-          Positioned.fill(child: _MapBackground(
-            mapController: _mapController,
-            currentPosition: _currentPosition,
-            routePoints: widget.routePoints,
-          )),
-
-          // ── gradient fade at bottom ────────────────────────────────────
-          Positioned(
-            left: 0, right: 0, bottom: 0,
-            height: 500,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.white.withValues(alpha: 0.4),
-                    Colors.white.withValues(alpha: 0.92),
-                    Colors.white,
-                  ],
-                  stops: const [0.0, 0.3, 0.6, 1.0],
+          // ── map section takes all remaining space ──────────────────────
+          Expanded(
+            child: Stack(
+              children: [
+                // Map fills the expanded bounded area
+                Positioned.fill(
+                  child: _MapBackground(
+                    mapController: _mapController,
+                    currentPosition: _currentPosition,
+                    routePoints: widget.routePoints,
+                  ),
                 ),
-              ),
-            ),
-          ),
 
-          // ── top app bar ────────────────────────────────────────────────
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
-                children: [
-                  _glassIconBtn(
-                    icon: Icons.arrow_back_rounded,
-                    onTap: () => Navigator.of(context).maybePop(),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Journey Tracking',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: _primary,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const Spacer(),
-                  _glassIconBtn(icon: Icons.notifications_outlined),
-                ],
-              ),
-            ),
-          ),
-
-
-          // ── status overlay (safe / SOS) ────────────────────────────────
-          if (_statusMessage.isNotEmpty)
-            Positioned(
-              left: 20, right: 20, bottom: 330,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: _surface.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _statusMessage == 'safe' ? _success : _error,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_statusMessage == 'safe' ? _success : _error).withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _statusMessage == 'safe' ? Icons.check_circle_rounded : Icons.emergency_share_rounded,
-                      color: _statusMessage == 'safe' ? _success : _error,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        _statusMessage == 'safe'
-                            ? 'Safe Status Confirmed — Contacts Notified'
-                            : 'SOS ACTIVE — Emergency Contacts Alerted',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: _statusMessage == 'safe' ? _success : _error,
-                          letterSpacing: 0.1,
-                        ),
+                // Gradient fade at bottom of map section
+                Positioned(
+                  left: 0, right: 0, bottom: 0,
+                  height: 120,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withValues(alpha: 0.85),
+                          Colors.white,
+                        ],
+                        stops: const [0.0, 0.7, 1.0],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-          // ── bottom bento dashboard ─────────────────────────────────────
-          Positioned(
-            left: 0, right: 0, bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 28, top: 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ETA & Distance row
-                  _glass(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                // Top app bar overlaid on map
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _statCell(label: 'ETA', value: '$_etaMin', unit: 'min'),
-                        Container(width: 1, height: 40, color: _outlineVariant),
-                        _statCell(label: 'Distance', value: '$_distKm', unit: 'km'),
-                        Container(width: 1, height: 40, color: _outlineVariant),
-                        _statCell(label: 'Speed', value: '${_speedKmh.toInt()}', unit: 'km/h'),
+                        _glassIconBtn(
+                          icon: Icons.arrow_back_rounded,
+                          onTap: () => Navigator.of(context).maybePop(),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: _surface.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: _outlineVariant.withValues(alpha: 0.4)),
+                            boxShadow: const [
+                              BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 2)),
+                            ],
+                          ),
+                          child: const Text(
+                            'Journey Tracking',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: _primary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        _glassIconBtn(icon: Icons.notifications_outlined),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+                ),
 
-                  // Status + Route row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _glass(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.route_outlined, size: 16, color: _secondary),
-                                  const SizedBox(width: 6),
-                                  Text('Status', style: TextStyle(fontSize: 11, color: _secondary)),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.check_circle_rounded, size: 16, color: _success),
-                                  const SizedBox(width: 5),
-                                  const Text(
-                                    'On Route',
-                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _onSurface),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text('DND Flyway', style: TextStyle(fontSize: 11, color: _secondary)),
-                            ],
-                          ),
+                // Status overlay (safe / SOS)
+                if (_statusMessage.isNotEmpty)
+                  Positioned(
+                    left: 20, right: 20, bottom: 12,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _surface.withValues(alpha: 0.97),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _statusMessage == 'safe' ? _success : _error,
+                          width: 2,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_statusMessage == 'safe' ? _success : _error).withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _glass(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.shield_outlined, size: 16, color: _secondary),
-                                  const SizedBox(width: 6),
-                                  Text('Safety', style: TextStyle(fontSize: 11, color: _secondary)),
-                                ],
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _statusMessage == 'safe' ? Icons.check_circle_rounded : Icons.emergency_share_rounded,
+                            color: _statusMessage == 'safe' ? _success : _error,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 10),
+                          Flexible(
+                            child: Text(
+                              _statusMessage == 'safe'
+                                  ? 'Safe Status Confirmed — Contacts Notified'
+                                  : 'SOS ACTIVE — Emergency Contacts Alerted',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: _statusMessage == 'safe' ? _success : _error,
+                                letterSpacing: 0.1,
                               ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                '96%',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: _primary,
-                                  letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // ── bottom bento dashboard — sits naturally below the map ──────
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 28, top: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ETA & Distance row
+                _glass(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _statCell(label: 'ETA', value: '$_etaMin', unit: 'min'),
+                      Container(width: 1, height: 40, color: _outlineVariant),
+                      _statCell(label: 'Distance', value: '$_distKm', unit: 'km'),
+                      Container(width: 1, height: 40, color: _outlineVariant),
+                      _statCell(label: 'Speed', value: '${_speedKmh.toInt()}', unit: 'km/h'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Status + Safety row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _glass(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.route_outlined, size: 16, color: _secondary),
+                                const SizedBox(width: 6),
+                                Text('Status', style: TextStyle(fontSize: 11, color: _secondary)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, size: 16, color: _success),
+                                const SizedBox(width: 5),
+                                const Text(
+                                  'On Route',
+                                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _onSurface),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text('Safe Corridor', style: TextStyle(fontSize: 11, color: _secondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _glass(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.shield_outlined, size: 16, color: _secondary),
+                                const SizedBox(width: 6),
+                                Text('Safety', style: TextStyle(fontSize: 11, color: _secondary)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '96%',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: _primary,
+                                letterSpacing: -0.5,
                               ),
-                              Text('Safe Route Score', style: TextStyle(fontSize: 11, color: _secondary)),
-                            ],
-                          ),
+                            ),
+                            Text('Safe Route Score', style: TextStyle(fontSize: 11, color: _secondary)),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
 
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _actionBtn(
-                          label: "I'm Safe",
-                          icon: Icons.health_and_safety_rounded,
-                          color: _primary,
-                          onTap: _handleSafe,
-                        ),
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: _actionBtn(
+                        label: "I'm Safe",
+                        icon: Icons.health_and_safety_rounded,
+                        color: _primary,
+                        onTap: _handleSafe,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _actionBtn(
-                          label: 'Not Safe',
-                          icon: Icons.warning_rounded,
-                          color: _errorContainer,
-                          onTap: _handleNotSafe,
-                        ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _actionBtn(
+                        label: 'Not Safe',
+                        icon: Icons.warning_rounded,
+                        color: _errorContainer,
+                        onTap: _handleNotSafe,
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
