@@ -235,7 +235,7 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: const Text(
-                  'Step 1 of 3',
+                  'Step 3 of 3',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,

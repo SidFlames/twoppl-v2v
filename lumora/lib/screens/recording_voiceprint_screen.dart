@@ -123,6 +123,26 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             children: [
+              // Step Badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _primaryContainer.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'Step 2 of 3',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _primaryContainer,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
               // Header Title
               const Text(
                 'Recording Voiceprint',
@@ -136,7 +156,7 @@ class _RecordingVoiceprintScreenState extends State<RecordingVoiceprintScreen>
               ),
               const SizedBox(height: 8),
               const Text(
-                'Repeat your secret phrase clearly.',
+                'Repeat the phrase in your natural and panic voice for safety measures.',
                 style: TextStyle(fontSize: 14, color: _onSurfaceVariant),
                 textAlign: TextAlign.center,
               ),
