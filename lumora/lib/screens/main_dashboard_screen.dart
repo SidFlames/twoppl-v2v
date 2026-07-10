@@ -19,10 +19,32 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   static const _surface = Color(0xFFFCF8FB);
   static const _surfaceContainerHigh = Color(0xFFEAE7EA);
   static const _surfaceContainerHighest = Color(0xFFE4E2E4);
+  static const _success = Color(0xFF006D32);
+  static const _successContainer = Color(0xFF1A7A3C);
+  static const _error = Color(0xFFBA1A1A);
+  static const _errorContainer = Color(0xFF8C0005);
 
+  bool _isGuardianModeActive = false;
   double _sosProgress = 0.0;
   Timer? _sosTimer;
   DateTime? _holdStartTime;
+
+  Future<void> _openGuardianMode() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => GuardianModeDashboardScreen(initialActive: _isGuardianModeActive),
+      ),
+    );
+    if (!mounted) return;
+    // Debug: print what was returned
+    debugPrint('Returned from Guardian Mode: $result, current state: $_isGuardianModeActive');
+    if (result != null) {
+      setState(() {
+        _isGuardianModeActive = result;
+      });
+      debugPrint('Updated state to: $_isGuardianModeActive');
+    }
+  }
 
   void _startSosHold() {
     setState(() {
@@ -300,14 +322,17 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                     const SizedBox(height: 16),
 
                     // Guardian Mode Card (Primary Blue Focus)
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: _primaryContainer,
+                        color: _isGuardianModeActive ? _successContainer : _errorContainer,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: _primaryContainer.withValues(alpha: 0.25),
+                            color: (_isGuardianModeActive ? _successContainer : _errorContainer)
+                                .withValues(alpha: 0.25),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -318,12 +343,16 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                         children: [
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
+                            children: [
                               Row(
                                 children: [
-                                  Icon(Icons.security, color: Colors.white, size: 18),
-                                  SizedBox(width: 6),
-                                  Text(
+                                  Icon(
+                                    _isGuardianModeActive ? Icons.security : Icons.security,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text(
                                     'GUARDIAN MODE',
                                     style: TextStyle(
                                       fontSize: 11,
@@ -334,20 +363,20 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 6),
+                              const SizedBox(height: 6),
                               Text(
-                                'ACTIVE',
-                                style: TextStyle(
+                                _isGuardianModeActive ? 'ACTIVE' : 'INACTIVE',
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
                                   letterSpacing: -0.5,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Protection Running',
-                                style: TextStyle(
+                                _isGuardianModeActive ? 'Protection Running' : 'Protection Off',
+                                style: const TextStyle(
                                   fontSize: 13,
                                   color: Colors.white70,
                                 ),
@@ -364,13 +393,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             ),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const GuardianModeDashboardScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: _openGuardianMode,
                             child: const Row(
                               children: [
                                 Text(
@@ -640,13 +663,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                   _buildNavItem(
                     icon: Icons.shield_outlined,
                     label: 'Safety',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const GuardianModeDashboardScreen(),
-                        ),
-                      );
-                    },
+                    onTap: _openGuardianMode,
                   ),
                   _buildNavItem(icon: Icons.history, label: 'History'),
                   _buildNavItem(icon: Icons.person_outline, label: 'Profile'),
