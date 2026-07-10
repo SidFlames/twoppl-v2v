@@ -29,6 +29,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   static const _errorContainer = Color(0xFF8C0005);
 
   bool _isGuardianModeActive = false;
+  String _userName = '';
+  String _userInitial = '?';
   StreamSubscription<DocumentSnapshot>? _userSubscription;
 
   @override
@@ -42,8 +44,12 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           .snapshots()
           .listen((snapshot) {
         if (snapshot.exists && mounted) {
+          final data = snapshot.data()!;
+          final name = (data['name'] as String? ?? '').trim();
           setState(() {
-            _isGuardianModeActive = snapshot.data()?['guardianMode'] ?? false;
+            _isGuardianModeActive = data['guardianMode'] ?? false;
+            _userName = name.isNotEmpty ? name.split(' ').first : 'User';
+            _userInitial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
           });
         }
       });
@@ -209,10 +215,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 border: Border.all(color: _outlineVariant),
                 color: _primary.withValues(alpha: 0.2),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  'J',
-                  style: TextStyle(
+                  _userInitial,
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _primary,
                   ),
@@ -233,9 +239,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Hello Greeting Section
-                    const Text(
-                      'Hello, John 👋',
-                      style: TextStyle(
+                    Text(
+                      'Hello, $_userName 👋',
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         color: _onSurface,
@@ -276,10 +282,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                                   border: Border.all(color: _primary, width: 2),
                                   color: _primary.withValues(alpha: 0.1),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Text(
-                                    'J',
-                                    style: TextStyle(
+                                    _userInitial,
+                                    style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w700,
                                       color: _primary,
@@ -530,84 +536,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-
-
-                    // Live Tracking Map Card
-                    Container(
-                      height: 160,
-                      decoration: BoxDecoration(
-                        color: _surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _outlineVariant.withValues(alpha: 0.5)),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Stack(
-                        children: [
-                          CustomPaint(
-                            size: const Size(double.infinity, 160),
-                            painter: _LiveMapPainter(),
-                          ),
-                          Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Colors.black54, Colors.transparent],
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 12,
-                            left: 16,
-                            right: 16,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1A7A3C),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        'LIVE TRACKING',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'Current Walk: Home',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Text(
-                                  '8 min left',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -617,35 +545,4 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       ),
     );
   }
-}
-
-class _LiveMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke;
-
-    // Drawing city lines
-    canvas.drawLine(Offset(0, size.height * 0.4), Offset(size.width, size.height * 0.4), paint);
-    canvas.drawLine(Offset(0, size.height * 0.8), Offset(size.width, size.height * 0.8), paint);
-    canvas.drawLine(Offset(size.width * 0.4, 0), Offset(size.width * 0.4, size.height), paint);
-
-    // Glowing point indicator
-    final pointPaint = Paint()
-      ..color = const Color(0xFF0052CC)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(size.width * 0.4, size.height * 0.4), 8, pointPaint);
-
-    final glowPaint = Paint()
-      ..color = const Color(0xFF0052CC).withValues(alpha: 0.3)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(Offset(size.width * 0.4, size.height * 0.4), 16, glowPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

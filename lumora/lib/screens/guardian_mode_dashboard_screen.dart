@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -32,7 +31,6 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
   late final Animation<double> _toggleAnimation;
 
   bool _isGuardianModeActive = true;
-  StreamSubscription<DocumentSnapshot>? _userSubscription;
 
   @override
   void initState() {
@@ -63,37 +61,10 @@ class _GuardianModeDashboardScreenState extends State<GuardianModeDashboardScree
     );
 
     _toggleController.value = _isGuardianModeActive ? 1.0 : 0.0;
-
-    // Set up real-time sync with user document on Firestore
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _userSubscription = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .snapshots()
-          .listen((snapshot) {
-        if (snapshot.exists && mounted) {
-          final active = snapshot.data()?['guardianMode'] ?? false;
-          if (active != _isGuardianModeActive) {
-            setState(() {
-              _isGuardianModeActive = active;
-              if (_isGuardianModeActive) {
-                _toggleController.forward();
-                _pulseController.repeat();
-              } else {
-                _toggleController.reverse();
-                _pulseController.stop();
-              }
-            });
-          }
-        }
-      });
-    }
   }
 
   @override
   void dispose() {
-    _userSubscription?.cancel();
     _pulseController.dispose();
     _toggleController.dispose();
     super.dispose();
