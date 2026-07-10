@@ -16,108 +16,141 @@ class NotificationService {
   
   StreamSubscription<QuerySnapshot>? _emergencySubscription;
   bool _isListeningToFirestore = false;
+  BuildContext? _appContext;
 
   static const String channelId = 'safesphere_alerts';
   static const String channelName = 'SafeSphere Emergency Alerts';
   static const String channelDescription = 'Notifications for active SOS and safety alerts';
 
   Future<void> initialize(BuildContext context) async {
-    // 1. Request Notification Permissions
-    await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    _appContext = context;
 
-    // 2. Initialize Local Notifications
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
+    try {
+      // 1. Request Notification Permissions
+      await _fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } catch (e) {
+      debugPrint('[NotificationService] FCM permission error: $e');
+    }
 
-    await _localNotifications.initialize(
-      settings: initSettings,
-      onDidReceiveNotificationResponse: (details) {
-        _handleNotificationTap(context, details.payload);
-      },
-    );
+    try {
+      // 2. Initialize Local Notifications
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosInit = DarwinInitializationSettings();
+      const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
 
-    // Create high importance Android notification channel
-    const androidChannel = AndroidNotificationChannel(
-      channelId,
-      channelName,
-      description: channelDescription,
-      importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
-    );
+      await _localNotifications.initialize(
+        settings: initSettings,
+        onDidReceiveNotificationResponse: (details) {
+          if (_appContext != null) {
+            _handleNotificationTap(_appContext!, details.payload);
+          }
+        },
+      );
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
+      // Create high importance Android notification channel
+      const androidChannel = AndroidNotificationChannel(
+        channelId,
+        channelName,
+        description: channelDescription,
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      );
 
-    // 3. Configure FCM Callbacks (Foreground Listener)
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final notification = message.notification;
-      if (notification != null) {
-        _showLocalNotification(
-          title: notification.title ?? 'Emergency Alert',
-          body: notification.body ?? 'A contact has triggered an SOS.',
-          payload: message.data['emergencyId'],
-        );
-      }
-    });
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(androidChannel);
+    } catch (e) {
+      debugPrint('[NotificationService] Local notifications init error: $e');
+    }
 
-    // Configure Background/Terminated Tap Handlers
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      _handleNotificationTap(context, message.data['emergencyId']);
-    });
+    try {
+      // 3. Configure FCM Callbacks (Foreground Listener)
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        final notification = message.notification;
+        if (notification != null) {
+          _showLocalNotification(
+            title: notification.title ?? 'Emergency Alert',
+            body: notification.body ?? 'A contact has triggered an SOS.',
+            payload: message.data['emergencyId'],
+          );
+        }
+      });
 
-    // 4. Start Firestore Live Sync Listener (Bulletproof Hackathon Hack)
-    // Listens to Firestore 'emergencies' collection directly to bypass FCM configuration issues.
-    startFirestoreEmergencyListener(context);
+      // Configure Background/Terminated Tap Handlers
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        if (_appContext != null) {
+          _handleNotificationTap(_appContext!, message.data['emergencyId']);
+        }
+      });
+    } catch (e) {
+      debugPrint('[NotificationService] FCM listener setup error: $e');
+    }
+
+    // 4. Start Firestore Live Sync Listener
+    startFirestoreEmergencyListener();
   }
 
-  void startFirestoreEmergencyListener(BuildContext context) {
+  void startFirestoreEmergencyListener() {
     if (_isListeningToFirestore) return;
     _isListeningToFirestore = true;
 
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      _isListeningToFirestore = false;
+      return;
+    }
 
-    // Listen only to active emergencies created in the last 10 minutes to prevent old alert spam on startup
-    final now = DateTime.now();
-    final cutoffTime = now.subtract(const Duration(minutes: 10));
+    try {
+      // Simple query: only filter by status to avoid needing a composite index
+      _emergencySubscription = FirebaseFirestore.instance
+          .collection('emergencies')
+          .where('status', isEqualTo: 'active')
+          .snapshots()
+          .listen((snapshot) async {
+        for (var change in snapshot.docChanges) {
+          if (change.type == DocumentChangeType.added) {
+            final data = change.doc.data();
+            if (data == null) continue;
 
-    _emergencySubscription = FirebaseFirestore.instance
-        .collection('emergencies')
-        .where('status', isEqualTo: 'active')
-        .where('createdAt', isGreaterThan: Timestamp.fromDate(cutoffTime))
-        .snapshots()
-        .listen((snapshot) async {
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final data = change.doc.data();
-          if (data == null) continue;
+            // Filter out old emergencies client-side
+            final createdAt = data['createdAt'] as Timestamp?;
+            if (createdAt != null) {
+              final age = DateTime.now().difference(createdAt.toDate());
+              if (age.inMinutes > 10) continue; // Skip old ones
+            }
 
-          final String emergencyId = change.doc.id;
-          final String userId = data['userId'] ?? '';
-          final String userName = data['userName'] ?? 'Someone in your Circle';
-          final String triggerType = data['trigger'] ?? 'manual';
+            final String emergencyId = change.doc.id;
+            final String userId = data['userId'] ?? '';
+            final String userName = data['userName'] ?? 'Someone in your Circle';
+            final String triggerType = data['trigger'] ?? 'manual';
 
-          // Don't trigger notification for the user's own emergency
-          if (userId != currentUser.uid) {
-            _showLocalNotification(
-              title: '🚨 SafeSphere SOS Alert!',
-              body: '$userName triggered a voice/safety SOS. Tap to track.',
-              payload: emergencyId,
-            );
+            // Don't trigger notification for the user's own emergency
+            if (userId != currentUser.uid) {
+              _showLocalNotification(
+                title: '🚨 SafeSphere SOS Alert!',
+                body: '$userName triggered a $triggerType SOS. Tap to track.',
+                payload: emergencyId,
+              );
 
-            // Pop up a real-time dialog if the app is open in foreground
-            _showEmergencyPopup(context, userName, triggerType, emergencyId);
+              // Pop up a real-time dialog if the app is open in foreground
+              if (_appContext != null) {
+                _showEmergencyPopup(_appContext!, userName, triggerType, emergencyId);
+              }
+            }
           }
         }
-      }
-    });
+      }, onError: (e) {
+        debugPrint('[NotificationService] Firestore listener error: $e');
+      });
+    } catch (e) {
+      debugPrint('[NotificationService] Failed to start Firestore listener: $e');
+      _isListeningToFirestore = false;
+    }
   }
 
   Future<void> _showLocalNotification({
@@ -125,36 +158,38 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      channelDescription: channelDescription,
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      enableVibration: true,
-    );
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    await _localNotifications.show(
-      id: math.Random().nextInt(100000),
-      title: title,
-      body: body,
-      notificationDetails: details,
-      payload: payload,
-    );
+      await _localNotifications.show(
+        id: math.Random().nextInt(100000),
+        title: title,
+        body: body,
+        notificationDetails: details,
+        payload: payload,
+      );
+    } catch (e) {
+      debugPrint('[NotificationService] Show notification error: $e');
+    }
   }
 
   void _handleNotificationTap(BuildContext context, String? emergencyId) {
     if (emergencyId == null) return;
     
-    // In production, navigate to active emergency monitoring screen.
-    // For demo, show SnackBar or show dialog
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Viewing live tracking for emergency: $emergencyId'),
@@ -173,11 +208,11 @@ class NotificationService {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext ctx) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: const [
+          title: const Row(
+            children: [
               Icon(Icons.warning_amber_rounded, color: Color(0xFFBA1A1A), size: 28),
               SizedBox(width: 10),
               Text(
@@ -196,12 +231,12 @@ class NotificationService {
               ),
               const SizedBox(height: 12),
               Text('Trigger Source: ${triggerType.toUpperCase()}'),
-              Text('Emergency ID: $emergencyId'),
+              Text('Emergency ID: ${emergencyId.substring(0, 8)}...'),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Dismiss', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
@@ -211,7 +246,7 @@ class NotificationService {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(99)),
               ),
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(ctx).pop();
                 _handleNotificationTap(context, emergencyId);
               },
               child: const Text('Track Location'),
@@ -225,5 +260,6 @@ class NotificationService {
   void dispose() {
     _emergencySubscription?.cancel();
     _isListeningToFirestore = false;
+    _appContext = null;
   }
 }
