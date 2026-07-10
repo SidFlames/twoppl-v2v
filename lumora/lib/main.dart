@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'screens/create_profile_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const SafeSphereApp());
 }
 
@@ -341,11 +348,54 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendOtp(BuildContext context) async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your phone number.')),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    final fullPhone = '+91$phone';
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: fullPhone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        // Auto-verification on Android
+        await FirebaseAuth.instance.signInWithCredential(credential);
+        if (!context.mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
+        );
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Verification failed.')),
+        );
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        setState(() => _isLoading = false);
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => OtpScreen(
+              phoneNumber: fullPhone,
+              verificationId: verificationId,
+            ),
+          ),
+        );
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    );
   }
 
   @override
@@ -406,25 +456,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             minimumSize: const Size.fromHeight(56),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => OtpScreen(
-                                  phoneNumber: _phoneController.text.trim().isEmpty
-                                      ? '+91 98765 43210'
-                                      : '+91 ${_phoneController.text.trim()}',
+                          onPressed: _isLoading ? null : () => _sendOtp(context),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 22, width: 22,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('Send OTP', style: TextStyle(fontWeight: FontWeight.w700)),
+                                    SizedBox(width: 8),
+                                    Icon(Icons.arrow_forward_rounded, size: 18),
+                                  ],
                                 ),
-                              ),
-                            );
-                          },
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Send OTP', style: TextStyle(fontWeight: FontWeight.w700)),
-                              SizedBox(width: 8),
-                              Icon(Icons.arrow_forward_rounded, size: 18),
-                            ],
-                          ),
                         ),
                         const SizedBox(height: 18),
                         Row(
@@ -494,9 +539,14 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({super.key, required this.phoneNumber});
+  const OtpScreen({
+    super.key,
+    required this.phoneNumber,
+    required this.verificationId,
+  });
 
   final String phoneNumber;
+  final String verificationId;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -567,19 +617,29 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  void _verifyOtp() {
+  bool _isVerifying = false;
+
+  Future<void> _verifyOtp() async {
     final otp = _controllers.map((c) => c.text).join();
-    if (otp == '123456') {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => CreateProfileScreen(),
-        ),
+    if (otp.length < 6) return;
+    setState(() => _isVerifying = true);
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: widget.verificationId,
+        smsCode: otp,
       );
-    } else {
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _isVerifying = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid OTP. Please enter 123456.'),
-          backgroundColor: Color(0xFFCC0000),
+        SnackBar(
+          content: Text(e.message ?? 'Invalid OTP. Please try again.'),
+          backgroundColor: const Color(0xFFCC0000),
         ),
       );
     }
@@ -696,24 +756,13 @@ class _OtpScreenState extends State<OtpScreen> {
                           minimumSize: const Size.fromHeight(52),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
-                        onPressed: () {
-                          final otp = _controllers.map((c) => c.text).join();
-                          if (otp == '123456') {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => CreateProfileScreen(),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Invalid OTP. Please enter 123456.'),
-                                backgroundColor: Color(0xFFCC0000),
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text('Verify', style: TextStyle(fontWeight: FontWeight.w700)),
+                        onPressed: _isVerifying ? null : _verifyOtp,
+                        child: _isVerifying
+                            ? const SizedBox(
+                                height: 22, width: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Verify', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                       const SizedBox(height: 32),
                     ],

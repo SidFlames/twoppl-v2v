@@ -1,8 +1,8 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
-
 import 'permissions_screen.dart';
 
 class CreateProfileScreen extends StatefulWidget {
@@ -26,6 +26,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   String? _gender;
   String? _bloodGroup;
 
+  bool _isSaving = false;
+
   static const _genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
   static const _bloodGroups = [
     'A+',
@@ -44,6 +46,41 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     _dobController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveProfile(BuildContext context) async {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name.')),
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'userId': user.uid,
+          'name': _nameController.text.trim(),
+          'phone': user.phoneNumber ?? '',
+          'dob': _dobController.text.trim(),
+          'gender': _gender ?? '',
+          'bloodGroup': _bloodGroup ?? '',
+          'notes': _notesController.text.trim(),
+          'guardianMode': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (!context.mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const PermissionsScreen()),
+      );
+    } catch (e) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save profile: $e')),
+      );
+    }
   }
 
   Future<void> _pickProfilePhoto() async {
@@ -271,21 +308,20 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                   minimumSize: const Size.fromHeight(56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PermissionsScreen(),
-                    ),
-                  );
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Complete Profile', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded, size: 18),
-                  ],
-                ),
+                onPressed: _isSaving ? null : () => _saveProfile(context),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 22, width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Complete Profile', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_rounded, size: 18),
+                        ],
+                      ),
               ),
             ),
           ],
