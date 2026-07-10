@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -41,57 +43,880 @@ class SafeSphereApp extends StatelessWidget {
   }
 }
 
-class OnboardingScreen extends StatelessWidget {
+class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
+  late final AnimationController _shaderController;
+  
+  bool _showIntro = true;
+  double _introOpacity = 1.0;
+
+  // Animations for logo and tagline
+  double _logoOpacity = 0.0;
+  double _logoScale = 0.95;
+  double _taglineOpacity = 0.0;
+  double _taglineTranslation = 10.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _shaderController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+
+    // Trigger logo entrance at 1s
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        setState(() {
+          _logoOpacity = 1.0;
+          _logoScale = 1.0;
+        });
+      }
+    });
+
+    // Trigger tagline entrance at 1.5s
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _taglineOpacity = 1.0;
+          _taglineTranslation = 0.0;
+        });
+      }
+    });
+
+    // Fade out entire intro screen starting at 2.5s (takes 1000ms)
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        setState(() {
+          _introOpacity = 0.0;
+        });
+      }
+    });
+
+    // Hide intro screen completely at 3.5s
+    Future.delayed(const Duration(milliseconds: 3500), () {
+      if (mounted) {
+        setState(() {
+          _showIntro = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _shaderController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_showIntro) {
+      return const WelcomeScreen();
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: AnimatedOpacity(
+        opacity: _introOpacity,
+        duration: const Duration(milliseconds: 1000),
+        curve: Curves.easeInOut,
+        child: Stack(
+          children: [
+            // Center WebGL shader recreation in Flutter
+            Center(
+              child: SizedBox(
+                width: 256,
+                height: 256,
+                child: AnimatedBuilder(
+                  animation: _shaderController,
+                  builder: (context, _) {
+                    return CustomPaint(
+                      painter: _ShaderPainter(_shaderController.value * 2 * pi * 5),
+                    );
+                  },
+                ),
+              ),
+            ),
+            // Brand Centerpiece
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedOpacity(
+                    opacity: _logoOpacity,
+                    duration: const Duration(milliseconds: 1000),
+                    curve: const Cubic(0.16, 1, 0.3, 1),
+                    child: AnimatedScale(
+                      scale: _logoScale,
+                      duration: const Duration(milliseconds: 1000),
+                      curve: const Cubic(0.16, 1, 0.3, 1),
+                      child: const Text(
+                        'LUMORA',
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF003D9B),
+                          letterSpacing: 8.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  AnimatedOpacity(
+                    opacity: _taglineOpacity,
+                    duration: const Duration(milliseconds: 1000),
+                    curve: const Cubic(0.16, 1, 0.3, 1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 1000),
+                      curve: const Cubic(0.16, 1, 0.3, 1),
+                      transform: Matrix4.translationValues(0, _taglineTranslation, 0),
+                      child: const Text(
+                        'PROTECTION THAT MOVES WITH YOU',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF595F66),
+                          letterSpacing: 2.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  late final PageController _pageController;
+  Timer? _swipeTimer;
+  int _currentPage = 0;
+
+  static const _primary = Color(0xFF003D9B);
+  static const _secondary = Color(0xFF595F66);
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    _startSwipeTimer();
+  }
+
+  void _startSwipeTimer() {
+    _swipeTimer?.cancel();
+    _swipeTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!mounted) return;
+      final nextPage = (_currentPage + 1) % 3;
+      _pageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _swipeTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentPage = index;
+    });
+    // Restart timer when page changes to give full 3 seconds
+    _startSwipeTimer();
+  }
+
+  void _navigateToLogin() {
+    _swipeTimer?.cancel();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const LoginScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          const _BackgroundOrbs(),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 900;
-
-                return SingleChildScrollView(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
-                                    child: Center(
-                                      child: ConstrainedBox(
-                                        constraints: const BoxConstraints(maxWidth: 1120),
-                                        child: isWide
-                                            ? IntrinsicHeight(
-                                                child: Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Expanded(child: _HeroPanel(color: Theme.of(context).colorScheme.primary)),
-                                                    const SizedBox(width: 32),
-                                                    const Expanded(child: _OnboardingCard()),
-                                                  ],
-                                                ),
-                                              )
-                                            : const Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  _HeroPanel(compact: true),
-                                                  SizedBox(height: 18),
-                                                  _OnboardingCard(),
-                                                ],
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-              },
+      backgroundColor: const Color(0xFFFCF8FB),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Section: Small Header Branding
+            const Padding(
+              padding: EdgeInsets.only(top: 24, bottom: 8),
+              child: Text(
+                'SafeSphere',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: _primary,
+                  letterSpacing: -0.4,
+                ),
+              ),
             ),
-          ),
-        ],
+
+            // Middle Carousel Section (PageView)
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                children: [
+                  // Slide 0: Welcome to Lumora
+                  _buildWelcomeSlide(),
+                  // Slide 1: Guardian Mode
+                  _buildGuardianSlide(),
+                  // Slide 2: SafeRoute AI
+                  _buildSafeRouteSlide(),
+                ],
+              ),
+            ),
+
+            // Bottom Actions & Dots
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Smooth animating indicator dots
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(3, (index) => _buildIndicatorDot(index)),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Bottom buttons row matching web design
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: _navigateToLogin,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text(
+                          'Skip',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: _secondary,
+                          ),
+                        ),
+                      ),
+                      FilledButton(
+                        onPressed: () {
+                          if (_currentPage < 2) {
+                            _pageController.animateToPage(
+                              _currentPage + 1,
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOutCubic,
+                            );
+                          } else {
+                            _navigateToLogin();
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _currentPage == 2 ? 'Continue' : 'Next',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward_rounded, size: 16),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Privacy tags
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Privacy First',
+                        style: TextStyle(fontSize: 11, color: Color(0x99595F66), fontWeight: FontWeight.w600),
+                      ),
+                      _dot(),
+                      const Text(
+                        'AI Powered',
+                        style: TextStyle(fontSize: 11, color: Color(0x99595F66), fontWeight: FontWeight.w600),
+                      ),
+                      _dot(),
+                      const Text(
+                        'Built for You',
+                        style: TextStyle(fontSize: 11, color: Color(0x99595F66), fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _buildWelcomeSlide() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Center(
+          child: Container(
+            width: 260,
+            height: 260,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _primary.withValues(alpha: 0.05),
+              boxShadow: [
+                BoxShadow(
+                  color: _primary.withValues(alpha: 0.08),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _primary.withValues(alpha: 0.15),
+                    width: 2,
+                  ),
+                ),
+                child: ClipOval(
+                  child: Image.network(
+                    'https://lh3.googleusercontent.com/aida/AP1WRLuxMbVhuNvaSTR9jIejwGGC4fUNDGLw2p6dwjMFa4LPZsDlnEh4QiLOw6q8wICtNNV7KdAZ4XBG-HJs50UDj-qPgLjasqGB3-azTvmQrjTsF6FvKPSuFS2-l3VMuUkI1q0DI-9ccjIsRmiO4nW5r6FEM8V7OGRfuWPmKWAMIX2z1zBghqWO-cSKZd6LWWwGSxoygWkV-1sGozzErkC6q-mK7EdOKCyzlW85mXXSCSbbFDwN5r70TwYZGTjO',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: const Color(0xFFE4E2E4),
+                        child: const Icon(Icons.shield_outlined, color: _primary, size: 64),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+        const Text(
+          'Welcome to Lumora',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF1B1B1D),
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            'Your intelligent safety companion, designed to protect every journey.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: _secondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGuardianSlide() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Bouncing decorative circles & phone representation
+        Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Pulse decorative circle behind phone
+              Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _primary.withValues(alpha: 0.04),
+                ),
+              ),
+              Container(
+                width: 210,
+                height: 210,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _primary.withValues(alpha: 0.06),
+                ),
+              ),
+
+              // Glass phone simulator
+              Container(
+                width: 170,
+                height: 220,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: const Color(0xFF1B1B1D).withValues(alpha: 0.1),
+                    width: 6,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x14000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(flex: 2),
+                    // Bouncing Soundwave Bars
+                    const _SoundWaveBars(),
+                    const Spacer(),
+                    // Listening badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _primary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Listening...',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: _primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 40),
+        const Text(
+          'Guardian Mode',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF1B1B1D),
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            'Hands-free voice protection that listens for your secret phrase.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: _secondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSafeRouteSlide() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Zoomed in Map with overlay badges
+        Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Map background container
+              Container(
+                width: 280,
+                height: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: const Color(0xFFC3C6D6).withValues(alpha: 0.5),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0A000000),
+                      blurRadius: 20,
+                      offset: Offset(0, 6),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.network(
+                  'https://lh3.googleusercontent.com/aida-public/AB6AXuAmI53u0lHciEpkdOwBwN4AA39gUshf2UprC07aaCsL9JmoTuQiyIOhfuF-gQiwj89HRbDNRQdZS64evrMwaAXyReZ_SgwBpnWb4MgLgxtzUgTmLWSktPZearqaEALqC6Yp8bPHAO2cz5NhorAEZKCWLrr5ppzE7YEbzqrP11NZhPB9nXqA_22JKUALzLPq4M1hgsQTEwQVqjPiJXQ3lrDxz7RJWY2FqUX2DXCj_tHhdmx8TKzi2uzIdcjqihp5d1bLBkIO04lbz_qE',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(color: const Color(0xFFF0EDEF));
+                  },
+                ),
+              ),
+
+              // Top Active Status overlay
+              Positioned(
+                top: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x0A000000), blurRadius: 6),
+                    ],
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.verified_user_rounded, color: _primary, size: 14),
+                      SizedBox(width: 4),
+                      Text(
+                        'SafeRoute AI Active',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: _primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Floating route comparison card in center
+              Positioned(
+                bottom: 20,
+                width: 220,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.97),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Safe Route Option
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _primary.withValues(alpha: 0.15)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _primary,
+                              ),
+                              child: const Icon(Icons.shield_rounded, color: Colors.white, size: 11),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Safe Route',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _primary),
+                                  ),
+                                  Text(
+                                    'Well-lit • AI Analyzed',
+                                    style: TextStyle(fontSize: 8, color: _secondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Text(
+                              '12 min',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _primary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Fastest Route Option
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF6F3F5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _secondary,
+                              ),
+                              child: const Icon(Icons.bolt_rounded, color: Colors.white, size: 12),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'Fastest Route',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    'High incident history',
+                                    style: TextStyle(fontSize: 8, color: _secondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Text(
+                              '9 min',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 40),
+        const Text(
+          'SafeRoute AI',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF1B1B1D),
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            'Compare the safest and fastest routes before you travel with SafeRoute AI.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              color: _secondary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIndicatorDot(int index) {
+    final active = index == _currentPage;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      height: 8,
+      width: active ? 24 : 8,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        color: active ? _primary : const Color(0xFFC3C6D6),
+      ),
+    );
+  }
+
+  Widget _dot() {
+    return Container(
+      width: 4,
+      height: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFFC3C6D6),
+      ),
+    );
+  }
+}
+
+// Bouncing Soundwave Widget
+class _SoundWaveBars extends StatefulWidget {
+  const _SoundWaveBars();
+
+  @override
+  State<_SoundWaveBars> createState() => _SoundWaveBarsState();
+}
+
+class _SoundWaveBarsState extends State<_SoundWaveBars> with SingleTickerProviderStateMixin {
+  late final AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const barCount = 5;
+    const barHeights = [48.0, 80.0, 128.0, 96.0, 64.0];
+    const primary = Color(0xFF003D9B);
+
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, child) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(barCount, (index) {
+            // Give each bar a slight delay offset
+            final offset = sin((_waveController.value * pi) + (index * 0.4));
+            final baseHeight = barHeights[index];
+            final animatedHeight = 16.0 + (baseHeight - 16.0) * (0.4 + 0.6 * offset.abs());
+
+            return Container(
+              width: 8,
+              height: animatedHeight,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                color: primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
+
+class _ShaderPainter extends CustomPainter {
+  final double time;
+
+  _ShaderPainter(this.time);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final maxRadius = size.width / 2;
+
+    // Pulse: 0.5 + 0.2 * sin(time * 1.5)
+    final pulse = 0.5 + 0.2 * sin(time * 0.3);
+    
+    // Radial gradient glow
+    final glowRadius = maxRadius * pulse;
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF2563EB).withValues(alpha: 0.4),
+          const Color(0xFF2563EB).withValues(alpha: 0.1),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: glowRadius));
+
+    canvas.drawCircle(center, glowRadius, glowPaint);
+
+    // Ripple effect
+    for (int i = 0; i < 2; i++) {
+      final ringProgress = ((time * 0.05) + (i * 0.5)) % 1.0;
+      final ringRadius = maxRadius * 0.3 + (maxRadius * 0.7 * ringProgress);
+      final ringOpacity = (1.0 - ringProgress) * 0.06;
+
+      if (ringOpacity > 0) {
+        final ringPaint = Paint()
+          ..color = const Color(0xFF2563EB).withValues(alpha: ringOpacity)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0;
+        canvas.drawCircle(center, ringRadius, ringPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShaderPainter oldDelegate) => oldDelegate.time != time;
 }
 
 class _HeroPanel extends StatelessWidget {
