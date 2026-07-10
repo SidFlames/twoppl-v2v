@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'guardian_mode_dashboard_screen.dart';
+import 'location_entry_screen.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   const MainDashboardScreen({super.key});
@@ -44,6 +45,12 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
       });
       debugPrint('Updated state to: $_isGuardianModeActive');
     }
+  }
+
+  void _openJourney() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const LocationEntryScreen()),
+    );
   }
 
   void _startSosHold() {
@@ -661,9 +668,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 children: [
                   _buildNavItem(icon: Icons.home, label: 'Home', active: true),
                   _buildNavItem(
-                    icon: Icons.shield_outlined,
-                    label: 'Safety',
-                    onTap: _openGuardianMode,
+                    icon: Icons.route,
+                    label: 'Journey',
+                    onTap: _openJourney,
                   ),
                   _buildNavItem(icon: Icons.history, label: 'History'),
                   _buildNavItem(icon: Icons.person_outline, label: 'Profile'),
