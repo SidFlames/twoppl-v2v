@@ -369,38 +369,83 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
+    
+    // Hackathon demo bypass: Special testing number or simple click-through fallback
+    if (phone == '7099280763' || phone == '1234567890' || phone == '9999999999') {
+      _bypassOtpFlow(context, '+91$phone');
+      return;
+    }
+
     setState(() => _isLoading = true);
     final fullPhone = '+91$phone';
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: fullPhone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        // Auto-verification on Android
-        await FirebaseAuth.instance.signInWithCredential(credential);
-        if (!context.mounted) return;
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
-        );
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Verification failed.')),
-        );
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        setState(() => _isLoading = false);
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => OtpScreen(
-              phoneNumber: fullPhone,
-              verificationId: verificationId,
+    try {
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: fullPhone,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await FirebaseAuth.instance.signInWithCredential(credential);
+          if (!context.mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
+          );
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() => _isLoading = false);
+          // Show error and provide option to bypass for demo convenience
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${e.message ?? 'Verification failed.'} Using demo bypass instead.'),
+              action: SnackBarAction(
+                label: 'Demo Bypass',
+                textColor: Colors.white,
+                onPressed: () => _bypassOtpFlow(context, fullPhone),
+              ),
+              backgroundColor: const Color(0xFFBA1A1A),
+              duration: const Duration(seconds: 8),
             ),
-          ),
-        );
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {},
-    );
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          setState(() => _isLoading = false);
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => OtpScreen(
+                phoneNumber: fullPhone,
+                verificationId: verificationId,
+              ),
+            ),
+          );
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _bypassOtpFlow(context, fullPhone);
+    }
+  }
+
+  Future<void> _bypassOtpFlow(BuildContext context, String phone) async {
+    setState(() => _isLoading = true);
+    try {
+      // Sign in anonymously to get a valid user session for Firestore access
+      await FirebaseAuth.instance.signInAnonymously();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Demo Bypass Activated: Logged in anonymously.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => CreateProfileScreen()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Bypass failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
