@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'guardian_mode_dashboard_screen.dart';
-import 'active_emergency_screen.dart';
+import 'emergency_active_screen.dart';
 import '../widgets/shared_bottom_nav.dart';
 import '../services/notification_service.dart';
 import 'package:uuid/uuid.dart';
@@ -132,7 +132,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
         if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => const ActiveEmergencyScreen(),
+            builder: (_) => const EmergencyActiveScreen(),
           ),
         );
       } catch (e) {
