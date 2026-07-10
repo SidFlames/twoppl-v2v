@@ -16,11 +16,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   static const _secondary = Color(0xFF595F66);
   static const _onSurface = Color(0xFF1B1B1D);
   static const _outlineVariant = Color(0xFFC3C6D6);
-  static const _tertiary = Color(0xFF8C0005);
   static const _surface = Color(0xFFFCF8FB);
   static const _surfaceContainerHigh = Color(0xFFEAE7EA);
   static const _surfaceContainerHighest = Color(0xFFE4E2E4);
-  static const _success = Color(0xFF006D32);
   static const _successContainer = Color(0xFF1A7A3C);
   static const _error = Color(0xFFBA1A1A);
   static const _errorContainer = Color(0xFF8C0005);
@@ -508,69 +506,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Emergency SOS Card
-                    GestureDetector(
-                      onTapDown: (_) => _startSosHold(),
-                      onTapUp: (_) => _resetSosHold(),
-                      onTapCancel: () => _resetSosHold(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: _tertiary,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: _tertiary.withValues(alpha: 0.3),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.2),
-                              ),
-                              child: const Icon(Icons.emergency_share, color: Colors.white, size: 40),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              '🚨 Emergency SOS',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Hold for 3 Seconds',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            // Progress indicator for SOS hold
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(99),
-                              child: LinearProgressIndicator(
-                                value: _sosProgress,
-                                minHeight: 6,
-                                backgroundColor: Colors.white.withValues(alpha: 0.25),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+
 
                     // Live Tracking Map Card
                     Container(
@@ -667,6 +603,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildNavItem(icon: Icons.home, label: 'Home', active: true),
+                  _buildSosNavItem(),
                   _buildNavItem(
                     icon: Icons.route,
                     label: 'Journey',
@@ -710,6 +647,47 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 fontSize: 11,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                 color: active ? _primary : _secondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSosNavItem() {
+    return GestureDetector(
+      onTapDown: (_) => _startSosHold(),
+      onTapUp: (_) => _resetSosHold(),
+      onTapCancel: () => _resetSosHold(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                if (_sosProgress > 0)
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      value: _sosProgress,
+                      color: _error,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                const Icon(Icons.report, color: _error, size: 28),
+              ],
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'SOS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: _error,
               ),
             ),
           ],
