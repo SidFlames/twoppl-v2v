@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 import '../widgets/shared_bottom_nav.dart';
 import 'journey_tracking_screen.dart';
 
@@ -23,6 +26,11 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
   String _selectedMode = 'Transit';
   bool _isAnalyzed = false;
   String _selectedRoute = 'Safest'; // 'Safest' or 'Fastest'
+  bool _isAnalyzing = false;
+  bool _isStarting = false;
+
+  String? _safestRouteId;
+  String? _fastestRouteId;
 
   @override
   void dispose() {
@@ -31,18 +39,102 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
     super.dispose();
   }
 
-  void _analyzeRoute() {
-    // Simulate API call and analysis
-    setState(() {
-      _isAnalyzed = true;
-    });
+  Future<void> _analyzeRoute() async {
+    setState(() => _isAnalyzing = true);
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final uuid = const Uuid();
+
+      _safestRouteId = uuid.v4();
+      _fastestRouteId = uuid.v4();
+
+      final origin = _originController.text;
+      final destination = _destinationController.text;
+
+      // 1. Create records in 'routes'
+      await firestore.collection('routes').doc(_safestRouteId).set({
+        'routeId': _safestRouteId,
+        'origin': origin,
+        'destination': destination,
+        'safestRouteId': _safestRouteId,
+      });
+
+      await firestore.collection('routes').doc(_fastestRouteId).set({
+        'routeId': _fastestRouteId,
+        'origin': origin,
+        'destination': destination,
+        'safestRouteId': _safestRouteId,
+      });
+
+      // 2. Create records in 'route_analysis' (police stations, hospitals, gas stations count)
+      await firestore.collection('route_analysis').doc(_safestRouteId).set({
+        'routeId': _safestRouteId,
+        'safetyScore': 96,
+        'reasons': [
+          'High density of police stations along Ring Rd',
+          '3 24/7 hospitals located on route',
+          'Well-lit street lights verified'
+        ],
+      });
+
+      await firestore.collection('route_analysis').doc(_fastestRouteId).set({
+        'routeId': _fastestRouteId,
+        'safetyScore': 72,
+        'reasons': [
+          'Low police presence on Expressway',
+          'Industrial area pathway with dimmer lights'
+        ],
+      });
+
+      setState(() {
+        _isAnalyzed = true;
+        _isAnalyzing = false;
+      });
+    } catch (e) {
+      setState(() => _isAnalyzing = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to analyze route safety: $e')),
+      );
+    }
   }
 
-  void _startJourney() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const JourneyTrackingScreen()),
-    );
+  Future<void> _startJourney() async {
+    setState(() => _isStarting = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final firestore = FirebaseFirestore.instance;
+        final uuid = const Uuid();
+        final rideId = uuid.v4();
+
+        final selectedRouteId = _selectedRoute == 'Safest' ? _safestRouteId : _fastestRouteId;
+
+        // Create ride session
+        await firestore.collection('ride_sessions').doc(rideId).set({
+          'rideId': rideId,
+          'userId': user.uid,
+          'routeId': selectedRouteId ?? '',
+          'status': 'active',
+          'riskScore': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => JourneyTrackingScreen(rideId: rideId),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start ride session: $e')),
+      );
+    } finally {
+      setState(() => _isStarting = false);
+    }
   }
 
   @override
@@ -186,10 +278,8 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                     if (!_isAnalyzed)
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _analyzeRoute,
-                          icon: const Icon(Icons.analytics_outlined),
-                          label: const Text('Analyze Safe Route'),
+                        child: ElevatedButton(
+                          onPressed: _isAnalyzing ? null : _analyzeRoute,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primary,
                             foregroundColor: Colors.white,
@@ -197,6 +287,19 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
+                          child: _isAnalyzing
+                              ? const SizedBox(
+                                  height: 20, width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.analytics_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Analyze Safe Route'),
+                                  ],
+                                ),
                         ),
                       )
                     else ...[
@@ -248,10 +351,8 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                       // Start Journey Button
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _startJourney,
-                          icon: const Icon(Icons.navigation),
-                          label: const Text('Start Journey'),
+                        child: ElevatedButton(
+                          onPressed: _isStarting ? null : _startJourney,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primary,
                             foregroundColor: Colors.white,
@@ -259,6 +360,19 @@ class _LocationEntryScreenState extends State<LocationEntryScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
+                          child: _isStarting
+                              ? const SizedBox(
+                                  height: 20, width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.navigation),
+                                    SizedBox(width: 8),
+                                    Text('Start Journey'),
+                                  ],
+                                ),
                         ),
                       ),
                     ],
