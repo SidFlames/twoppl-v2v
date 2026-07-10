@@ -43,32 +43,35 @@ class OnboardingScreen extends StatelessWidget {
                 final isWide = constraints.maxWidth >= 900;
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1120),
-                        child: isWide
-                            ? Row(
-                                children: [
-                                  Expanded(child: _HeroPanel(color: Theme.of(context).colorScheme.primary)),
-                                  const SizedBox(width: 32),
-                                  const Expanded(child: _OnboardingCard()),
-                                ],
-                              )
-                            : const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _HeroPanel(compact: true),
-                                  SizedBox(height: 18),
-                                  _OnboardingCard(),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ),
-                );
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+                                    child: Center(
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 1120),
+                                        child: isWide
+                                            ? IntrinsicHeight(
+                                                child: Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Expanded(child: _HeroPanel(color: Theme.of(context).colorScheme.primary)),
+                                                    const SizedBox(width: 32),
+                                                    const Expanded(child: _OnboardingCard()),
+                                                  ],
+                                                ),
+                                              )
+                                            : const Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  _HeroPanel(compact: true),
+                                                  SizedBox(height: 18),
+                                                  _OnboardingCard(),
+                                                ],
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                );
               },
             ),
           ),
@@ -218,31 +221,27 @@ class _OnboardingCard extends StatelessWidget {
         children: [
           const _StatusBarMock(),
           const SizedBox(height: 24),
-          const Center(
-            child: SizedBox(
-              width: 300,
-              child: Text(
-                'Smart Protection\nWhen You Need It Most',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  height: 1.1,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.6,
-                  color: Color(0xFF1B1B1D),
-                ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 0),
+            child: Text(
+              'Smart Protection\nWhen You Need It Most',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.6,
+                color: Color(0xFF1B1B1D),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          const Center(
-            child: SizedBox(
-              width: 300,
-              child: Text(
-                'AI-powered voice recognition, real-time alerts and smart emergency support.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF595F66)),
-              ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 0),
+            child: Text(
+              'AI-powered voice recognition, real-time alerts and smart emergency support.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF595F66)),
             ),
           ),
           const SizedBox(height: 24),
@@ -595,30 +594,27 @@ class _OtpScreenState extends State<OtpScreen> {
                         style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.8),
                       ),
                       const SizedBox(height: 8),
-                      Text.rich(
-                        TextSpan(
-                          text: 'Enter the 6-digit code sent to\n',
-                          style: const TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF595F66)),
-                          children: [
-                            TextSpan(
-                              text: widget.phoneNumber,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: scheme.onSurface,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        'Enter the 6-digit code sent to',
+                        style: const TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF595F66)),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.phoneNumber,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(6, (index) {
                           return Container(
-                            width: 52,
+                            width: 48,
                             height: 56,
-                            margin: EdgeInsets.only(right: index == 5 ? 0 : 12),
+                            margin: EdgeInsets.only(right: index == 5 ? 0 : 8),
                             child: TextField(
                               controller: _controllers[index],
                               focusNode: _focusNodes[index],
