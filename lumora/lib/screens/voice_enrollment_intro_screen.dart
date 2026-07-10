@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'secret_phrase_setup_screen.dart';
+import 'recording_voiceprint_screen.dart';
 
 class VoiceEnrollmentIntroScreen extends StatefulWidget {
   const VoiceEnrollmentIntroScreen({super.key});
@@ -217,7 +217,7 @@ class _VoiceEnrollmentIntroScreenState
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => const SecretPhraseSetupScreen(),
+                        builder: (_) => const RecordingVoiceprintScreen(phrase: 'Blue Umbrella'),
                       ),
                     );
                   },
