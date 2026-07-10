@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'main_dashboard_screen.dart';
 
 class VoiceProfileCreatedScreen extends StatefulWidget {
   const VoiceProfileCreatedScreen({super.key, this.secretPhrase = 'Blue Umbrella'});
@@ -297,7 +298,13 @@ class _VoiceProfileCreatedScreenState extends State<VoiceProfileCreatedScreen>
                     ),
                     elevation: 3,
                   ),
-                  onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const MainDashboardScreen(),
+                      ),
+                    );
+                  },
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
