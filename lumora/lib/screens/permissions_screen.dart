@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'emergency_contacts_screen.dart';
 
 class PermissionsScreen extends StatefulWidget {
   const PermissionsScreen({super.key});
@@ -52,17 +53,14 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
         _batteryOptimization = true;
       });
 
-      // Navigate back / reload / go to home after 2 seconds
+      // Navigate to EmergencyContactsScreen after 2 seconds
       Future.delayed(const Duration(milliseconds: 2000), () {
         if (!mounted) return;
-        // Pop or show home dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All protection services are now active!'),
-            backgroundColor: _primary,
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const EmergencyContactsScreen(),
           ),
         );
-        Navigator.of(context).pop();
       });
     });
   }
