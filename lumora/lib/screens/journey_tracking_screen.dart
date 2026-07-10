@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../utils/sos_controller.dart';
 
 class JourneyTrackingScreen extends StatefulWidget {
-  const JourneyTrackingScreen({super.key});
+  const JourneyTrackingScreen({super.key, required this.rideId});
+  final String rideId;
 
   @override
   State<JourneyTrackingScreen> createState() => _JourneyTrackingScreenState();
@@ -50,9 +53,59 @@ class _JourneyTrackingScreenState extends State<JourneyTrackingScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Tick live values every 3s to give a "live" feel
-    _liveTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    // Tick live values every 3s to give a "live" feel and write to Firestore
+    _liveTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
       if (!mounted) return;
+      
+      // Default simulated coords
+      double lat = 28.6139 + (math.Random().nextDouble() - 0.5) * 0.005;
+      double lng = 77.2090 + (math.Random().nextDouble() - 0.5) * 0.005;
+      
+      try {
+        // Request or check permissions, if allowed get real coordinates
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+          final pos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 2),
+          );
+          lat = pos.latitude;
+          lng = pos.longitude;
+        }
+      } catch (_) {
+        // Fallback to simulated coords
+      }
+
+      // Write location coordinate to Firestore collection 'ride_locations'
+      try {
+        final firestore = FirebaseFirestore.instance;
+        await firestore.collection('ride_locations').add({
+          'rideId': widget.rideId,
+          'lat': lat,
+          'lng': lng,
+          'speed': _speedKmh,
+          'time': FieldValue.serverTimestamp(),
+        });
+
+        // Expected route central coordinate
+        const expectedLat = 28.6139;
+        const expectedLng = 77.2090;
+        final distance = Geolocator.distanceBetween(lat, lng, expectedLat, expectedLng);
+
+        // If user deviates > 100 meters from path, write to route_deviations
+        if (distance > 100) {
+          await firestore.collection('route_deviations').add({
+            'rideId': widget.rideId,
+            'expected': '28.6139, 77.2090',
+            'actual': '$lat, $lng',
+            'distance': distance,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        debugPrint('Failed to save tracking coordinate: $e');
+      }
+
       setState(() {
         _etaMin = math.max(0, _etaMin - 1);
         _distKm = math.max(0, double.parse((_distKm - 0.1).toStringAsFixed(1)));
