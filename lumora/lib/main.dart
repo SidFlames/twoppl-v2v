@@ -41,7 +41,7 @@ class LumoraApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFFCF8FB),
         fontFamily: 'Inter',
       ),
-      home: const OnboardingScreen(),
+      home: kIsWeb ? const WelcomeScreen() : const OnboardingScreen(),
     );
   }
 }
@@ -72,6 +72,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+
+    // Skip intro entirely on web
+    if (kIsWeb) {
+      _showIntro = false;
+      return;
+    }
 
     // Trigger logo entrance at 1s
     Future.delayed(const Duration(milliseconds: 1000), () {
