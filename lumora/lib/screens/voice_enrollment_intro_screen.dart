@@ -54,7 +54,7 @@ class _VoiceEnrollmentIntroScreenState
           icon: const Icon(Icons.arrow_back, color: _primary),
         ),
         title: const Text(
-          'SafeSphere',
+          'Lumora',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,

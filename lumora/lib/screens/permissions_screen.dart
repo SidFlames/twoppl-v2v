@@ -32,7 +32,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     if (!_essentialGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enable Location and Microphone — they are essential for SafeSphere.'),
+          content: Text('Please enable Location and Microphone — they are essential for Lumora.'),
           backgroundColor: Color(0xFFB90009),
         ),
       );
@@ -126,7 +126,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'To provide life-saving protection, SafeSphere requires specific device access. Your data is encrypted and only shared during active emergencies.',
+                      'To provide life-saving protection, Lumora requires specific device access. Your data is encrypted and only shared during active emergencies.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,

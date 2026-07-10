@@ -19,7 +19,7 @@ class NotificationService {
   BuildContext? _appContext;
 
   static const String channelId = 'safesphere_alerts';
-  static const String channelName = 'SafeSphere Emergency Alerts';
+  static const String channelName = 'Lumora Emergency Alerts';
   static const String channelDescription = 'Notifications for active SOS and safety alerts';
 
   Future<void> initialize(BuildContext context) async {
@@ -132,7 +132,7 @@ class NotificationService {
             // Don't trigger notification for the user's own emergency
             if (userId != currentUser.uid) {
               _showLocalNotification(
-                title: '🚨 SafeSphere SOS Alert!',
+                title: '🚨 Lumora SOS Alert!',
                 body: '$userName triggered a $triggerType SOS. Tap to track.',
                 payload: emergencyId,
               );

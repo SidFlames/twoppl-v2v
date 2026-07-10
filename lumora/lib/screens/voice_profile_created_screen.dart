@@ -54,7 +54,7 @@ class _VoiceProfileCreatedScreenState extends State<VoiceProfileCreatedScreen>
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text(
-          'SafeSphere',
+          'Lumora',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -117,7 +117,7 @@ class _VoiceProfileCreatedScreenState extends State<VoiceProfileCreatedScreen>
               ),
               const SizedBox(height: 10),
               const Text(
-                'Your voice is secured and enrolled successfully. SafeSphere is now ready to recognize your unique voice pattern.',
+                'Your voice is secured and enrolled successfully. Lumora is now ready to recognize your unique voice pattern.',
                 style: TextStyle(fontSize: 14, color: _secondary, height: 1.5),
                 textAlign: TextAlign.center,
               ),

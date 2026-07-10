@@ -21,7 +21,7 @@ class VoiceBackgroundService {
     // Standard Android Notification Channel setup
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       notificationChannelId,
-      'SafeSphere Active Protection',
+      'Lumora Active Protection',
       description: 'Listens for voice wake-words in the background for automatic SOS response.',
       importance: Importance.low,
     );
@@ -39,7 +39,7 @@ class VoiceBackgroundService {
         autoStart: false,
         isForegroundMode: true,
         notificationChannelId: notificationChannelId,
-        initialNotificationTitle: 'SafeSphere Active Protection',
+        initialNotificationTitle: 'Lumora Active Protection',
         initialNotificationContent: 'SilentPass background listener running...',
         foregroundServiceNotificationId: notificationId,
       ),
@@ -119,7 +119,7 @@ class VoiceBackgroundService {
               notificationDetails: const NotificationDetails(
                 android: AndroidNotificationDetails(
                   notificationChannelId,
-                  'SafeSphere Active Protection',
+                  'Lumora Active Protection',
                   channelDescription: 'Emergency SOS notification',
                   importance: Importance.max,
                   priority: Priority.high,

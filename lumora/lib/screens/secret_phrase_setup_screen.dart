@@ -209,7 +209,7 @@ class _SecretPhraseSetupScreenState extends State<SecretPhraseSetupScreen>
         ),
         leadingWidth: 100,
         title: const Text(
-          'SafeSphere',
+          'Lumora',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
